@@ -59,19 +59,19 @@ export function ProductCard({ product }: { product: Product }) {
         params={{ id: product.id }}
         className="block focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"
       >
-        <div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-border bg-surface-2">
+        <div className="relative aspect-4/5 overflow-hidden rounded-sm border border-border bg-surface-2">
           <img
             src={product.images[0]}
             alt={product.name}
             loading="lazy"
-            className="absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] group-hover:opacity-0"
+            className="absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500 ease-drop group-hover:scale-[1.04] group-hover:opacity-0"
           />
           <img
             src={second}
             alt=""
             aria-hidden="true"
             loading="lazy"
-            className="absolute inset-0 h-full w-full scale-[1.06] object-cover opacity-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-100 group-hover:opacity-100"
+            className="absolute inset-0 h-full w-full scale-[1.06] object-cover opacity-0 transition-[opacity,transform] duration-500 ease-drop group-hover:scale-100 group-hover:opacity-100"
           />
 
           {product.tag && (
@@ -89,7 +89,7 @@ export function ProductCard({ product }: { product: Product }) {
             <WishlistButton product={product} />
           </div>
 
-          <div className="absolute inset-x-3 bottom-3 md:translate-y-3 md:opacity-0 md:transition-all md:duration-300 md:ease-[cubic-bezier(0.16,1,0.3,1)] md:group-hover:translate-y-0 md:group-hover:opacity-100">
+          <div className="absolute inset-x-3 bottom-3 md:translate-y-3 md:opacity-0 md:transition-all md:duration-300 md:ease-drop md:group-hover:translate-y-0 md:group-hover:opacity-100">
             <button
               type="button"
               disabled={!product.inStock}

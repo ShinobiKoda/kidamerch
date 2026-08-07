@@ -1,18 +1,8 @@
+// src/api/products.ts
+import { apiFetch } from './client'
+import type { Product } from '@/types/storefront'
 
-import { supabase } from '@/lib/supabase';
-
-export async function getProducts() {
-  const { data, error } = await supabase
-    .from('products')
-    .select(`
-      *,
-      product_variants(*),
-      product_images(*)
-    `)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  console.log(data)
-  return data
+export const productsApi = {
+  getStorefrontProducts: () => apiFetch<Product[]>('/products'),
+  getProductById: (id: string) => apiFetch<Product>(`/products/${id}`),
 }

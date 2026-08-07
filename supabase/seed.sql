@@ -261,120 +261,120 @@ insert into product_variants (id, product_id, sku, stock) values
 
 -- Ronin Heavyweight Hoodie
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000001', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000001', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000001', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000001', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Crimson Blade 1/7 Statue
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000002', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000002', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000002', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000002', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Impact Frame Risograph Print
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000003', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000003', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000003', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000003', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);
 
 -- Sigil Enamel Pin Set
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000004', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000004', '/assets/p-print.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000004', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000004', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 1);
 
 -- Nightfall Boxy Tee
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000005', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000005', '/assets/p-print.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000005', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000005', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 1);
 
 -- Silent Vigil Deluxe Figure
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000006', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000006', '/assets/p-accessory.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000006', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000006', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 1);
 
 -- Brushwork 6-Panel Cap
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000007', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000007', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000007', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000007', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);
 
 -- Ink Study Triptych
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000008', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000008', '/assets/p-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000008', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000008', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 1);
 
 -- Shadowline Work Jacket
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000009', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000009', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000009', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000009', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Wandering Scholar Mini
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000010', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000010', '/assets/p-print.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000010', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000010', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 1);
 
 -- Keeper Canvas Tote
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000011', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000011', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000011', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000011', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);
 
 -- Speedline Offset Poster
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000012', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000012', '/assets/p-accessory.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000012', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000012', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 1);
 
 -- Duel Panel Crewneck
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000013', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000013', '/assets/p-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000013', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000013', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 1);
 
 -- Oni Mask Wall Bust
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000014', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000014', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000014', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000014', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Cast Chain Necklace
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000015', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000015', '/assets/p-print.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000015', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000015', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 1);
 
 -- Quiet City Screenprint
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000016', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000016', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000016', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000016', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);
 
 -- Drop Zero Cargo Pant
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000017', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000017', '/assets/p-accessory.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000017', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000017', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 1);
 
 -- Twin Blade Diorama
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000018', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000018', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000018', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000018', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Utility Belt Bag
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000019', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000019', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000019', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000019', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);
 
 -- Storyboard Zine Vol. 2
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000020', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000020', '/assets/p-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000020', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000020', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 1);
 
 -- Monochrome Knit Scarf
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000021', '/assets/p-accessory.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000021', '/assets/p-print.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000021', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000021', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 1);
 
 -- Sentinel Varsity Jacket
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000022', '/assets/p-apparel.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000022', '/assets/hero-figure.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000022', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000022', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129610/kidamerch/seed/hero-figure.jpg', 1);
 
 -- Ember Lantern Figure
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000023', '/assets/p-figure.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000023', '/assets/p-accessory.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000023', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129605/kidamerch/seed/p-figure.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000023', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129607/kidamerch/seed/p-accessory.jpg', 1);
 
 -- Grid Study Letterpress
 insert into product_images (product_id, url, position) values
-  ('a0000001-0000-0000-0000-000000000024', '/assets/p-print.jpg', 0),
-  ('a0000001-0000-0000-0000-000000000024', '/assets/p-apparel.jpg', 1);
+  ('a0000001-0000-0000-0000-000000000024', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129606/kidamerch/seed/p-print.jpg', 0),
+  ('a0000001-0000-0000-0000-000000000024', 'https://res.cloudinary.com/m7sfebwp/image/upload/v1786129601/kidamerch/seed/p-apparel.jpg', 1);

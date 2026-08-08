@@ -72,14 +72,14 @@ export function CartDrawer() {
                   <AnimatePresence initial={false}>
                     {lines.map(({ line, product }) => (
                       <motion.li
-                        key={`${line.id}-${line.variant ?? "one"}`}
+                        key={`${line.id}-${line.variant?.id ?? "one"}`}
                         layout
                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                         transition={{ duration: 0.3, ease: EASE }}
                         className="flex gap-4 overflow-hidden py-5"
                       >
                         <img
-                          src={product.images[0]}
+                          src={product.images[0]?.url}
                           alt=""
                           loading="lazy"
                           className="h-24 w-20 shrink-0 rounded-sm object-cover"
@@ -88,18 +88,18 @@ export function CartDrawer() {
                           <p className="truncate text-sm font-semibold">{product.name}</p>
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             {product.category}
-                            {line.variant ? ` · ${line.variant}` : ""}
+                            {line.variant ? ` · ${line.variant.size || line.variant.color || line.variant.design || "Standard"}` : ""}
                           </p>
                           <div className="mt-3 flex items-center justify-between gap-2">
                             <QtyStepper
                               compact
                               qty={line.qty}
-                              onChange={(n) => setQty(line.id, line.variant, n)}
+                              onChange={(n) => setQty(line.id, line.variant?.id, n)}
                             />
                             <button
                               type="button"
                               aria-label="Remove item"
-                              onClick={() => removeLine(line.id, line.variant)}
+                              onClick={() => removeLine(line.id, line.variant?.id)}
                               className="grid h-9 w-9 place-items-center text-muted-foreground transition-colors duration-150 hover:text-primary"
                             >
                               <Trash2 size={15} />
@@ -107,7 +107,7 @@ export function CartDrawer() {
                           </div>
                         </div>
                         <p className="shrink-0 text-sm font-semibold tabular-nums">
-                          {formatPrice(product.price * line.qty)}
+                          {formatPrice((product.basePrice || 0) * line.qty)}
                         </p>
                       </motion.li>
                     ))}

@@ -4,8 +4,10 @@ import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { ThemeToggle } from "./theme";
 import { useStore } from "@/lib/store";
-import { formatPrice, products } from "@/data/products";
+import { formatPrice } from "@/data/products";
 import { EASE } from "./Reveal";
+import { useProducts } from "@/hooks/useProducts";
+import type { Product } from "@/types/storefront";
 
 const LINKS = [
   { label: "Shop", to: "/shop" },
@@ -37,12 +39,12 @@ export function Nav() {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-drop ${
           scrolled ? "glass-bar border-b border-border" : "border-b border-transparent"
         }`}
       >
         <div
-          className={`mx-auto flex max-w-7xl items-center gap-4 px-5 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] sm:px-8 ${
+          className={`mx-auto flex max-w-7xl items-center gap-4 px-5 transition-all duration-300 ease-drop sm:px-8 ${
             scrolled ? "h-14" : "h-20"
           }`}
         >
@@ -135,7 +137,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[70] bg-background lg:hidden"
+          className="fixed inset-0 z-70 bg-background lg:hidden"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -185,6 +187,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState("");
   const navigate = useNavigate();
+  const { data: products = [] } = useProducts();
 
   const results = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -194,10 +197,10 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
         (p) =>
           p.name.toLowerCase().includes(term) ||
           p.category.toLowerCase().includes(term) ||
-          p.description.toLowerCase().includes(term),
+          (p.description?.toLowerCase().includes(term) ?? false),
       )
       .slice(0, 6);
-  }, [q]);
+  }, [q, products]);
 
   useEffect(() => {
     if (!open) setQ("");
@@ -207,7 +210,7 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[80] bg-background/95 backdrop-blur-md"
+          className="fixed inset-0 z-80 bg-background/95 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -250,7 +253,7 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
                   className="flex w-full items-center gap-4 rounded-sm p-2 text-left transition-colors duration-150 hover:bg-secondary"
                 >
                   <img
-                    src={p.images[0]}
+                    src={p.images[0]?.url}
                     alt=""
                     loading="lazy"
                     className="h-14 w-14 shrink-0 rounded-sm object-cover"
@@ -260,7 +263,7 @@ function SearchOverlay({ open, onClose }: { open: boolean; onClose: () => void }
                     <span className="block text-xs text-muted-foreground">{p.category}</span>
                   </span>
                   <span className="shrink-0 text-sm font-semibold text-primary">
-                    {formatPrice(p.price)}
+                    {formatPrice(p.basePrice || 0)}
                   </span>
                 </button>
               ))}

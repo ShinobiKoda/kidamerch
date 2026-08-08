@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { categories, products, type Category } from "@/data/products";
+import { categories, type Category } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
 import { EASE } from "@/components/Reveal";
+import { useProducts } from "@/hooks/useProducts";
+import type { Product } from "@/types/storefront";
 
 type Sort = "newest" | "price-asc" | "price-desc" | "popular";
 
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/shop")({
 });
 
 function Shop() {
+  const { data: products = [] } = useProducts();
   const search = Route.useSearch();
   const initial = categories.find((c) => c.name === search.category)?.name;
 
@@ -45,18 +48,19 @@ function Shop() {
   const filtered = useMemo(() => {
     const list = products.filter(
       (p) =>
-        (selected.length === 0 || selected.includes(p.category)) &&
-        p.price <= maxPrice &&
-        (!inStockOnly || p.inStock),
+        (selected.length === 0 || selected.includes(p.category as Category)) &&
+        p.basePrice <= maxPrice &&
+        (!inStockOnly || p.isActive),
     );
     const sorted = [...list];
-    if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
-    if (sort === "popular") sorted.sort((a, b) => b.popularity - a.popularity);
+    if (sort === "price-asc") sorted.sort((a, b) => a.basePrice - b.basePrice);
+    if (sort === "price-desc") sorted.sort((a, b) => b.basePrice - a.basePrice);
+    // Remove popular sort for now or implement differently, since we don't have popularity
+    if (sort === "popular") sorted.sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
     if (sort === "newest")
-      sorted.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+      sorted.sort((a, b) => +new Date(b.createdAt || "") - +new Date(a.createdAt || ""));
     return sorted;
-  }, [selected, maxPrice, inStockOnly, sort]);
+  }, [products, selected, maxPrice, inStockOnly, sort]);
 
   const reset = () => {
     setSelected([]);
@@ -66,6 +70,7 @@ function Shop() {
 
   const filters = (
     <Filters
+      products={products}
       selected={selected}
       setSelected={setSelected}
       maxPrice={maxPrice}
@@ -148,14 +153,14 @@ function Shop() {
         {drawerOpen && (
           <>
             <motion.div
-              className="fixed inset-0 z-[85] bg-ink/60 lg:hidden"
+              className="fixed inset-0 z-85 bg-ink/60 lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setDrawerOpen(false)}
             />
             <motion.div
-              className="fixed inset-x-0 bottom-0 z-[90] max-h-[85svh] overflow-y-auto rounded-t-xl border-t border-border bg-background p-6 lg:hidden"
+              className="fixed inset-x-0 bottom-0 z-90 max-h-[85svh] overflow-y-auto rounded-t-xl border-t border-border bg-background p-6 lg:hidden"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -189,6 +194,7 @@ function Shop() {
 }
 
 function Filters({
+  products,
   selected,
   setSelected,
   maxPrice,
@@ -197,6 +203,7 @@ function Filters({
   setInStockOnly,
   reset,
 }: {
+  products: Product[];
   selected: Category[];
   setSelected: (next: Category[]) => void;
   maxPrice: number;
@@ -250,7 +257,7 @@ function Filters({
           value={maxPrice}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
           aria-label="Maximum price"
-          className="mt-4 h-11 w-full accent-[var(--primary)]"
+          className="mt-4 h-11 w-full accent-primary"
         />
       </div>
 
@@ -268,7 +275,7 @@ function Filters({
             }`}
           >
             {inStockOnly && (
-              <span className="h-1.5 w-2.5 -translate-y-0.5 rotate-[-45deg] border-b-2 border-l-2 border-primary-foreground" />
+              <span className="h-1.5 w-2.5 -translate-y-0.5 -rotate-45 border-b-2 border-l-2 border-primary-foreground" />
             )}
           </span>
           In stock only

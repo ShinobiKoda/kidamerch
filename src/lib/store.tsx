@@ -8,9 +8,10 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
-import { getProduct, type Product } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import type { Product, ProductVariant } from "@/types/storefront";
 
-export type CartLine = { id: string; variant: string | null; qty: number };
+export type CartLine = { id: string; variant: ProductVariant | null; qty: number };
 
 type StoreValue = {
   cart: CartLine[];
@@ -21,9 +22,9 @@ type StoreValue = {
   tax: number;
   total: number;
   lines: { line: CartLine; product: Product }[];
-  addToCart: (product: Product, variant?: string | null, qty?: number) => void;
-  setQty: (id: string, variant: string | null, qty: number) => void;
-  removeLine: (id: string, variant: string | null) => void;
+  addToCart: (product: Product, variant?: ProductVariant | null, qty?: number) => void;
+  setQty: (id: string, variantId: string | null | undefined, qty: number) => void;
+  removeLine: (id: string, variantId: string | null | undefined) => void;
   clearCart: () => void;
   toggleWishlist: (product: Product) => void;
   isWished: (id: string) => boolean;
@@ -43,6 +44,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [bump, setBump] = useState(0);
   const [hydrated, setHydrated] = useState(false);
+
+  const { data: allProducts = [] } = useProducts();
+  const getProduct = useCallback((id: string) => allProducts.find(p => p.id === id), [allProducts]);
 
   useEffect(() => {
     try {
@@ -67,34 +71,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [wishlist, hydrated]);
 
   const addToCart = useCallback(
-    (product: Product, variant: string | null = null, qty = 1) => {
+    (product: Product, variant: ProductVariant | null = null, qty = 1) => {
       setCart((prev) => {
-        const existing = prev.find((l) => l.id === product.id && l.variant === variant);
+        const existing = prev.find((l) => l.id === product.id && l.variant?.id === variant?.id);
         if (existing) {
           return prev.map((l) =>
-            l.id === product.id && l.variant === variant ? { ...l, qty: l.qty + qty } : l,
+            l.id === product.id && l.variant?.id === variant?.id ? { ...l, qty: l.qty + qty } : l,
           );
         }
         return [...prev, { id: product.id, variant, qty }];
       });
       setBump((b) => b + 1);
+      const variantName = variant ? (variant.size || variant.color || variant.design || "Standard") : "";
       toast.success("Added to cart", {
-        description: `${product.name}${variant ? ` · ${variant}` : ""}`,
+        description: `${product.name}${variantName ? ` · ${variantName}` : ""}`,
       });
     },
     [],
   );
 
-  const setQty = useCallback((id: string, variant: string | null, qty: number) => {
+  const setQty = useCallback((id: string, variantId: string | null | undefined, qty: number) => {
     setCart((prev) =>
       qty <= 0
-        ? prev.filter((l) => !(l.id === id && l.variant === variant))
-        : prev.map((l) => (l.id === id && l.variant === variant ? { ...l, qty } : l)),
+        ? prev.filter((l) => !(l.id === id && l.variant?.id === variantId))
+        : prev.map((l) => (l.id === id && l.variant?.id === variantId ? { ...l, qty } : l)),
     );
   }, []);
 
-  const removeLine = useCallback((id: string, variant: string | null) => {
-    setCart((prev) => prev.filter((l) => !(l.id === id && l.variant === variant)));
+  const removeLine = useCallback((id: string, variantId: string | null | undefined) => {
+    setCart((prev) => prev.filter((l) => !(l.id === id && l.variant?.id === variantId)));
   }, []);
 
   const clearCart = useCallback(() => setCart([]), []);
@@ -120,7 +125,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
       .filter(Boolean) as { line: CartLine; product: Product }[];
 
-    const subtotal = lines.reduce((sum, l) => sum + l.product.price * l.line.qty, 0);
+    const subtotal = lines.reduce((sum, l) => sum + (l.product.basePrice || 0) * l.line.qty, 0);
     const shipping = subtotal === 0 ? 0 : subtotal > 250 ? 0 : 14;
     const tax = Math.round(subtotal * 0.08 * 100) / 100;
 
@@ -146,6 +151,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     cart,
     wishlist,
+    getProduct,
     addToCart,
     setQty,
     removeLine,

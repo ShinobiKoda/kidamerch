@@ -97,7 +97,7 @@ export function ProductCard({ product }: { product: Product }) {
               disabled={!product.isActive}
               onClick={(e) => {
                 e.preventDefault();
-                // addToCart(product, product.variants[0] ?? null);
+                addToCart(product, (product.variants && product.variants[0]) ? (product.variants[0] as any) : null, 1);
               }}
               className="eyebrow h-11 w-full rounded-sm bg-primary text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-muted-foreground"
             >

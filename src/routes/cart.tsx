@@ -58,7 +58,7 @@ function CartPage() {
             <AnimatePresence initial={false}>
               {lines.map(({ line, product }) => (
                 <motion.li
-                  key={`${line.id}-${line.variant ?? "one"}`}
+                  key={`${line.id}-${line.variant?.id ?? "one"}`}
                   layout
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3, ease: EASE }}
@@ -70,10 +70,10 @@ function CartPage() {
                     className="block overflow-hidden rounded-sm"
                   >
                     <img
-                      src={product.images[0]}
+                      src={product.images[0]?.url}
                       alt={product.name}
                       loading="lazy"
-                      className="aspect-[4/5] w-full object-cover"
+                      className="aspect-4/5 w-full object-cover"
                     />
                   </Link>
                   <div className="min-w-0">
@@ -86,21 +86,21 @@ function CartPage() {
                     </Link>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {product.category}
-                      {line.variant ? ` · ${line.variant}` : ""}
+                      {line.variant ? ` · ${line.variant.size || line.variant.color || line.variant.design || "Standard"}` : ""}
                     </p>
                     <p className="mt-2 text-sm font-semibold text-primary tabular-nums sm:hidden">
-                      {formatPrice(product.price * line.qty)}
+                      {formatPrice((product.basePrice || 0) * line.qty)}
                     </p>
                     <div className="mt-4 flex items-center gap-3">
                       <QtyStepper
                         compact
                         qty={line.qty}
-                        onChange={(n) => setQty(line.id, line.variant, n)}
+                        onChange={(n) => setQty(line.id, line.variant?.id, n)}
                       />
                       <button
                         type="button"
                         aria-label="Remove item"
-                        onClick={() => removeLine(line.id, line.variant)}
+                        onClick={() => removeLine(line.id, line.variant?.id)}
                         className="grid h-11 w-11 place-items-center text-muted-foreground transition-colors duration-150 hover:text-primary"
                       >
                         <Trash2 size={15} />
@@ -108,7 +108,7 @@ function CartPage() {
                     </div>
                   </div>
                   <p className="hidden shrink-0 font-semibold tabular-nums sm:block">
-                    {formatPrice(product.price * line.qty)}
+                    {formatPrice((product.basePrice || 0) * line.qty)}
                   </p>
                 </motion.li>
               ))}

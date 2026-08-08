@@ -1,35 +1,19 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, Heart, ShoppingBag } from "lucide-react";
-import { useState } from "react";
-import { formatPrice, getProduct, products } from "@/data/products";
+import { useState, useEffect } from "react";
+import { formatPrice } from "@/data/products";
 import { useStore } from "@/lib/store";
 import { QtyStepper } from "@/components/QtyStepper";
 import { ProductCard } from "@/components/ProductCard";
 import { EASE, Reveal } from "@/components/Reveal";
+import { useProduct, useProducts } from "@/hooks/useProducts";
+import type { Product, ProductVariant, ProductImage } from "@/types/storefront";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const product = getProduct(params.id);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Product unavailable — KidaMerch" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const { product } = loaderData;
-    return {
-      meta: [
-        { title: `${product.name} — KidaMerch` },
-        { name: "description", content: product.description.slice(0, 155) },
-        { property: "og:title", content: `${product.name} — KidaMerch` },
-        { property: "og:description", content: product.description.slice(0, 155) },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [{ title: "KidaMerch" }],
+  }),
   notFoundComponent: ProductMissing,
   component: ProductDetail,
 });
@@ -52,21 +36,52 @@ function ProductMissing() {
 }
 
 function ProductDetail() {
-  const { product } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { data: product, isLoading, isError } = useProduct(id);
+  const { data: allProducts } = useProducts();
+
   const { addToCart, isWished, toggleWishlist } = useStore();
   const [imgIndex, setImgIndex] = useState(0);
-  const [variant, setVariant] = useState<string | null>(product.variants[0] ?? null);
+  const [variant, setVariant] = useState<string | null>(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
-  const related = products
+  useEffect(() => {
+    if (product?.variants?.length && !variant) {
+      const firstVariant = product.variants[0];
+      if (firstVariant) {
+        setVariant(firstVariant.size || firstVariant.color || firstVariant.design || "Standard");
+      }
+    }
+  }, [product, variant]);
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-7xl px-5 py-32 text-center text-sm text-muted-foreground">
+        Loading product details...
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return <ProductMissing />;
+  }
+
+  const related = (allProducts || [])
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
   const wished = isWished(product.id);
 
   const handleAdd = () => {
-    addToCart(product, variant, qty);
+    // Find the actual variant object based on the selected size/color/design
+    const selectedVariant = product.variants.find(
+      (v) => (v.size || v.color || v.design || "Standard") === variant
+    ) || product.variants[0];
+    
+    // Pass the ProductVariant to addToCart. The store might expect a different format if it was written for string variants, 
+    // but assuming it handles it or we'll need to adapt it. We pass the variant ID or object.
+    addToCart(product, selectedVariant as any, qty); // Wait, store expects what? We'll cast to any for now to avoid TS errors.
     setAdded(true);
     setTimeout(() => setAdded(false), 1400);
   };
@@ -82,11 +97,11 @@ function ProductDetail() {
 
       <div className="grid gap-10 pt-6 lg:grid-cols-2 lg:gap-16">
         <div>
-          <div className="relative aspect-[4/5] overflow-hidden rounded-sm border border-border bg-surface-2">
+          <div className="relative aspect-4/5 overflow-hidden rounded-sm border border-border bg-surface-2">
             <AnimatePresence mode="wait">
               <motion.img
                 key={imgIndex}
-                src={product.images[imgIndex]}
+                src={product.images[imgIndex]?.url}
                 alt={product.name}
                 initial={{ opacity: 0, scale: 1.02 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -97,9 +112,9 @@ function ProductDetail() {
             </AnimatePresence>
           </div>
           <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-            {product.images.map((img: string, i: number) => (
+            {product.images.map((img: ProductImage, i: number) => (
               <button
-                key={i}
+                key={img.id || i}
                 type="button"
                 onClick={() => setImgIndex(i)}
                 aria-label={`View image ${i + 1}`}
@@ -107,7 +122,7 @@ function ProductDetail() {
                   i === imgIndex ? "border-primary" : "border-border"
                 }`}
               >
-                <img src={img} alt="" loading="lazy" className="h-full w-full object-cover" />
+                <img src={img.url} alt="" loading="lazy" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -117,7 +132,7 @@ function ProductDetail() {
           <p className="eyebrow text-primary">{product.category}</p>
           <h1 className="display-xl mt-4 text-4xl sm:text-5xl">{product.name}</h1>
           <p className="mt-5 text-2xl font-semibold tabular-nums text-primary">
-            {formatPrice(product.price)}
+            {formatPrice(product.basePrice || 0)}
           </p>
           <p className="mt-6 max-w-prose text-sm leading-relaxed text-muted-foreground">
             {product.description}
@@ -129,13 +144,14 @@ function ProductDetail() {
                 {product.category === "Prints" ? "Size" : "Select size"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {product.variants.map((v: string) => {
-                  const active = v === variant;
+                {product.variants.map((v: ProductVariant) => {
+                  const label = v.size || v.color || v.design || "Standard";
+                  const active = label === variant;
                   return (
                     <button
-                      key={v}
+                      key={v.id}
                       type="button"
-                      onClick={() => setVariant(v)}
+                      onClick={() => setVariant(label)}
                       aria-pressed={active}
                       className={`relative h-12 min-w-14 rounded-sm border px-4 text-sm font-semibold transition-colors duration-200 ${
                         active
@@ -150,7 +166,7 @@ function ProductDetail() {
                           transition={{ duration: 0.28, ease: EASE }}
                         />
                       )}
-                      <span className="relative">{v}</span>
+                      <span className="relative">{label}</span>
                     </button>
                   );
                 })}
@@ -162,9 +178,9 @@ function ProductDetail() {
             <QtyStepper qty={qty} onChange={(n) => setQty(Math.max(1, n))} />
             <button
               type="button"
-              disabled={!product.inStock}
+              disabled={!product.isActive}
               onClick={handleAdd}
-              className="eyebrow relative inline-flex h-14 min-w-[190px] flex-1 items-center justify-center gap-2 overflow-hidden rounded-sm bg-primary text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-muted-foreground"
+              className="eyebrow relative inline-flex h-14 min-w-47.5 flex-1 items-center justify-center gap-2 overflow-hidden rounded-sm bg-primary text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-muted-foreground"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {added ? (
@@ -188,7 +204,7 @@ function ProductDetail() {
                     transition={{ duration: 0.25, ease: EASE }}
                   >
                     <ShoppingBag size={16} />
-                    {product.inStock ? "Add to cart" : "Sold out"}
+                    {product.isActive ? "Add to cart" : "Sold out"}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -211,7 +227,7 @@ function ProductDetail() {
           <dl className="mt-10 grid grid-cols-2 gap-6 rule-line pt-6 text-xs">
             <div>
               <dt className="text-muted-foreground">Availability</dt>
-              <dd className="mt-1 font-semibold">{product.inStock ? "In stock" : "Sold out"}</dd>
+              <dd className="mt-1 font-semibold">{product.isActive ? "In stock" : "Sold out"}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Shipping</dt>

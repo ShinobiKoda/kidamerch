@@ -8,9 +8,8 @@ import {useProducts} from "@/hooks/useProducts";
 
 
 export default function NewArrivals() {
-  const { data: newArrivals, isLoading, isError } = useProducts();
+  const { data: newArrivals, isLoading, isError } = useProducts({ limit: 7 });
   
-  // Changed to show all products for testing (removed .slice(0, 6))
   const featured = newArrivals || [];
 
   return (

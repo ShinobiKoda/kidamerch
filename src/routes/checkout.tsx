@@ -98,17 +98,17 @@ function Checkout() {
                 <ul className="mt-5 space-y-3 text-sm">
                   {lines.map(({ line, product }) => (
                     <li
-                      key={`${line.id}-${line.variant ?? "one"}`}
+                      key={`${line.id}-${line.variant?.id ?? "one"}`}
                       className="flex items-start justify-between gap-3"
                     >
                       <span className="min-w-0">
                         <span className="block truncate">{product.name}</span>
                         <span className="block text-xs text-muted-foreground">
-                          {line.variant ? `${line.variant} · ` : ""}Qty {line.qty}
+                          {line.variant ? `${line.variant.size || line.variant.color || line.variant.design || "Standard"} · ` : ""}Qty {line.qty}
                         </span>
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        {formatPrice(product.price * line.qty)}
+                        {formatPrice((product.basePrice || 0) * line.qty)}
                       </span>
                     </li>
                   ))}
@@ -286,13 +286,13 @@ function PaymentStep({
     <div className="space-y-6">
       <h2 className="display-xl text-2xl">Payment</h2>
 
-      <div className="[perspective:1200px]">
+      <div className="perspective-distant">
         <motion.div
-          className="relative aspect-[16/10] w-full max-w-sm [transform-style:preserve-3d]"
+          className="relative aspect-16/10 w-full max-w-sm transform-3d"
           animate={{ rotateY: flipped && !reduce ? 180 : 0 }}
           transition={{ duration: 0.6, ease: EASE }}
         >
-          <div className="absolute inset-0 flex flex-col justify-between rounded-lg border border-border bg-surface-2 p-6 [backface-visibility:hidden]">
+          <div className="absolute inset-0 flex flex-col justify-between rounded-lg border border-border bg-surface-2 p-6 backface-hidden">
             <div className="flex items-center justify-between">
               <span className="h-7 w-10 rounded-sm bg-primary/80" />
               <span className="eyebrow text-[10px] text-muted-foreground">KidaMerch</span>
@@ -303,7 +303,7 @@ function PaymentStep({
               <span className="tabular-nums">{expiry || "MM/YY"}</span>
             </div>
           </div>
-          <div className="absolute inset-0 flex flex-col justify-center gap-4 rounded-lg border border-border bg-surface-2 p-6 [backface-visibility:hidden] [transform:rotateY(180deg)]">
+          <div className="absolute inset-0 flex flex-col justify-center gap-4 rounded-lg border border-border bg-surface-2 p-6 backface-hidden transform-[rotateY(180deg)]">
             <span className="-mx-6 h-10 bg-ink" />
             <span className="ml-auto rounded-sm bg-background px-4 py-2 font-mono text-sm">
               {cvc || "•••"}

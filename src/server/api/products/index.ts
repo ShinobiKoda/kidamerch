@@ -1,11 +1,10 @@
 // src/server/api/products/index.ts
 import { defineEventHandler, createError } from 'h3'
-import { supabaseAdmin } from '~/lib/supabase-admin'
-import type { Database } from '~/types/database'
-import type { Product, DBProductWithRelations } from '~/types/storefront'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import type { Database } from '@/types/database.types'
+import type { Product, DBProductWithRelations } from '@/types/storefront'
 
 export default defineEventHandler(async (event): Promise<Product[]> => {
-  // Pass Database type to supabaseAdmin for strict query autocompletion
   const { data, error } = await supabaseAdmin
     .from('products')
     .select(`
@@ -25,7 +24,6 @@ export default defineEventHandler(async (event): Promise<Product[]> => {
 
   const rawProducts = (data || []) as unknown as DBProductWithRelations[]
 
-  // DTO Mapping
   return rawProducts.map((product) => ({
     id: product.id,
     name: product.name,

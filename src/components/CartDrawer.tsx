@@ -24,7 +24,7 @@ export function CartDrawer() {
       {cartOpen && (
         <>
           <motion.div
-            className="fixed inset-0 z-[85] bg-ink/60"
+            className="fixed inset-0 z-85 bg-ink/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -34,7 +34,7 @@ export function CartDrawer() {
           <motion.aside
             role="dialog"
             aria-label="Cart"
-            className="fixed inset-y-0 right-0 z-[90] flex w-full flex-col bg-background sm:w-[420px] lg:w-[460px] sm:border-l sm:border-border"
+            className="fixed inset-y-0 right-0 z-90 flex w-full flex-col bg-background sm:w-105 lg:w-115 sm:border-l sm:border-border"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}

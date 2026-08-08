@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { formatPrice, type Product } from "@/data/products";
+import { formatPrice } from "@/data/products";
+import type { Product } from '@/types/storefront'
+
 import { useStore } from "@/lib/store";
 import { EASE } from "./Reveal";
 
@@ -22,7 +24,7 @@ export function WishlistButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleWishlist(product);
+        // toggleWishlist(product);
       }}
       className={`grid h-11 w-11 place-items-center rounded-full border border-border bg-background/85 backdrop-blur-sm transition-colors duration-200 hover:border-primary ${className}`}
     >
@@ -46,7 +48,7 @@ export function WishlistButton({
 export function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useStore();
   const reduce = useReducedMotion();
-  const second = product.images[1] ?? product.images[0];
+  const second = product.images[1]?.url ?? product.images[0]?.url;
 
   return (
     <motion.article
@@ -61,7 +63,7 @@ export function ProductCard({ product }: { product: Product }) {
       >
         <div className="relative aspect-4/5 overflow-hidden rounded-sm border border-border bg-surface-2">
           <img
-            src={product.images[0]}
+            src={product.images[0]?.url}
             alt={product.name}
             loading="lazy"
             className="absolute inset-0 h-full w-full object-cover transition-[opacity,transform] duration-500 ease-drop group-hover:scale-[1.04] group-hover:opacity-0"
@@ -74,12 +76,12 @@ export function ProductCard({ product }: { product: Product }) {
             className="absolute inset-0 h-full w-full scale-[1.06] object-cover opacity-0 transition-[opacity,transform] duration-500 ease-drop group-hover:scale-100 group-hover:opacity-100"
           />
 
-          {product.tag && (
+          {product.category && (
             <span className="eyebrow absolute left-3 top-3 rounded-full bg-ink/85 px-3 py-1.5 text-[10px] text-white">
-              {product.tag}
+              {product.category}
             </span>
           )}
-          {!product.inStock && (
+          {!product.isActive && (
             <span className="eyebrow absolute left-3 bottom-3 rounded-full bg-background px-3 py-1.5 text-[10px] text-muted-foreground">
               Sold out
             </span>
@@ -92,14 +94,14 @@ export function ProductCard({ product }: { product: Product }) {
           <div className="absolute inset-x-3 bottom-3 md:translate-y-3 md:opacity-0 md:transition-all md:duration-300 md:ease-drop md:group-hover:translate-y-0 md:group-hover:opacity-100">
             <button
               type="button"
-              disabled={!product.inStock}
+              disabled={!product.isActive}
               onClick={(e) => {
                 e.preventDefault();
-                addToCart(product, product.variants[0] ?? null);
+                // addToCart(product, product.variants[0] ?? null);
               }}
               className="eyebrow h-11 w-full rounded-sm bg-primary text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-muted-foreground"
             >
-              {product.inStock ? "Add to cart" : "Unavailable"}
+              {product.isActive ? "Add to cart" : "Unavailable"}
             </button>
           </div>
         </div>
@@ -112,7 +114,7 @@ export function ProductCard({ product }: { product: Product }) {
             </h3>
           </div>
           <p className="shrink-0 text-[15px] font-semibold text-primary tabular-nums">
-            {formatPrice(product.price)}
+            {formatPrice(product.basePrice)}
           </p>
         </div>
       </Link>

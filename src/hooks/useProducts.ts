@@ -25,3 +25,21 @@ export function useProduct(id: string) {
     staleTime: 1000 * 60 * 5,
   })
 }
+
+export function useHeroProduct() {
+  return useQuery({
+    queryKey: ['products', 'hero'],
+    queryFn: productsApi.getHeroProduct,
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  })
+}
+
+// src/hooks/useProducts.ts — add
+
+export function useActiveProductCount() {
+  return useQuery<number, Error>({
+    queryKey: ['products', 'active-count'],
+    queryFn: productsApi.getActiveProductCount,
+    staleTime: 1000 * 60 * 15,
+  })
+}

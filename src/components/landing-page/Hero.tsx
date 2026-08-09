@@ -5,6 +5,7 @@ import { useRef } from "react";
 import heroImg from "@/assets/hero-figure.jpg";
 
 import { EASE } from "@/components/Reveal";
+import { useHeroProduct, useActiveProductCount } from "@/hooks/useProducts";
 
 export default function Hero() {
   const ref = useRef<HTMLDivElement>(null);
@@ -12,6 +13,11 @@ export default function Hero() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const y = useTransform(scrollYProgress, [0, 1], [0, reduce ? 0 : 120]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, reduce ? 1 : 1.08]);
+
+  const { data: heroData, isLoading } = useHeroProduct();
+  const { data: activeCount, isLoading: countLoading } = useActiveProductCount();
+
+  const featured = heroData;
 
   const step = (i: number) => ({
     initial: { opacity: 0, y: reduce ? 0 : 22 },
@@ -59,12 +65,18 @@ export default function Hero() {
           </motion.div>
           <motion.dl {...step(4)} className="mt-14 grid max-w-md grid-cols-3 gap-6 rule-line pt-6">
             {[
-              ["24", "Pieces in drop"],
+              [countLoading ? null : String(activeCount ?? 0), "Pieces in drop"],
               ["120", "Lowest edition"],
               ["4", "Drops a year"],
             ].map(([n, label]) => (
               <div key={label}>
-                <dt className="display-xl text-2xl">{n}</dt>
+                <dt className="display-xl text-2xl">
+                  {n === null ? (
+                    <div className="mt-1 h-7 w-10 animate-pulse rounded bg-muted" />
+                  ) : (
+                    n
+                  )}
+                </dt>
                 <dd className="mt-1 text-[11px] leading-tight text-muted-foreground">{label}</dd>
               </div>
             ))}
@@ -80,14 +92,19 @@ export default function Hero() {
             transition={{ duration: 0.9, ease: EASE }}
             className="relative aspect-4/5 overflow-hidden rounded-sm border border-border bg-surface-2 shadow-lift"
           >
-            <img
-              src={heroImg}
-              alt="Hand-painted anime-inspired warrior statue in black and crimson"
-              width={1200}
-              height={1504}
-              className="h-full w-full object-cover"
-            />
+            {isLoading ? (
+              <div className="h-full w-full animate-pulse bg-muted" />
+            ) : (
+              <img
+                src={featured?.imageUrl || heroImg}
+                alt={featured?.name || "Hand-painted anime-inspired warrior statue in black and crimson"}
+                width={1200}
+                height={1504}
+                className="h-full w-full object-cover"
+              />
+            )}
           </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,7 +112,13 @@ export default function Hero() {
             className="absolute -bottom-5 left-4 rounded-sm border border-border bg-background px-5 py-4 shadow-elevate sm:left-8"
           >
             <p className="eyebrow text-[10px] text-muted-foreground">Now shipping</p>
-            <p className="mt-1 text-sm font-semibold">Crimson Blade 1/7 Statue</p>
+            {isLoading ? (
+              <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted" />
+            ) : (
+              <p className="mt-1 text-sm font-semibold">
+                {featured?.name || "Crimson Blade 1/7 Statue"}
+              </p>
+            )}
           </motion.div>
         </div>
       </div>

@@ -74,4 +74,36 @@ export const productsApi = {
     const dbProduct = data as unknown as DBProductWithRelations
     return transformProduct(dbProduct)
   },
+
+
+  getHeroProduct: async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, product_images(url)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false }) 
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+
+    return data
+      ? {
+          id: data.id,
+          name: data.name,
+          imageUrl: data.product_images?.[0]?.url ?? null,
+        }
+      : null
+  },
+
+  getActiveProductCount: async (): Promise<number> => {
+    // head: true means no rows are returned, just the count — cheap.
+    const { count, error } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+
+    if (error) throw new Error(error.message)
+    return count ?? 0
+  },
 }

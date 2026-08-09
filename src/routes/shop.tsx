@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
-import { categories, type Category } from "@/data/products";
 import { ProductCard } from "@/components/ProductCard";
 import { EASE } from "@/components/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 import type { Product } from "@/types/storefront";
 
-type Sort = "newest" | "price-asc" | "price-desc" | "popular";
+type Sort = "newest" | "price-asc" | "price-desc";
+
+const DEFAULT_PRICE_CEILING = 350; // fallback floor before products load, or if catalogue is tiny
 
 export const Route = createFileRoute("/shop")({
   validateSearch: (search: Record<string, unknown>): { category?: string } =>
@@ -34,29 +35,56 @@ export const Route = createFileRoute("/shop")({
   component: Shop,
 });
 
+function totalStock(p: Product): number {
+  return p.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
+}
+
 function Shop() {
   const { data: products = [] } = useProducts();
   const search = Route.useSearch();
-  const initial = categories.find((c) => c.name === search.category)?.name;
 
-  const [selected, setSelected] = useState<Category[]>(initial ? [initial] : []);
-  const [maxPrice, setMaxPrice] = useState(350);
+  const availableCategories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))).sort(),
+    [products],
+  );
+
+  // Ceiling tracks the most expensive active product, never below the
+  // default floor — so the slider stays usable even on a small catalogue,
+  // but never silently clips out a genuinely pricier item.
+  const priceMax = useMemo(
+    () =>
+      products.length
+        ? Math.max(DEFAULT_PRICE_CEILING, ...products.map((p) => p.basePrice))
+        : DEFAULT_PRICE_CEILING,
+    [products],
+  );
+
+  const initial = availableCategories.find((c) => c === search.category);
+
+  const [selected, setSelected] = useState<string[]>(initial ? [initial] : []);
+  const [maxPrice, setMaxPrice] = useState(priceMax);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sort, setSort] = useState<Sort>("newest");
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // If priceMax grows after products load (e.g. initial render happened
+  // before data arrived), bump maxPrice up too — but only if the user
+  // hasn't already pulled it below the ceiling on purpose.
+  const [userAdjustedPrice, setUserAdjustedPrice] = useState(false);
+  if (!userAdjustedPrice && maxPrice !== priceMax) {
+    setMaxPrice(priceMax);
+  }
+
   const filtered = useMemo(() => {
     const list = products.filter(
       (p) =>
-        (selected.length === 0 || selected.includes(p.category as Category)) &&
+        (selected.length === 0 || selected.includes(p.category)) &&
         p.basePrice <= maxPrice &&
-        (!inStockOnly || p.isActive),
+        (!inStockOnly || totalStock(p) > 0),
     );
     const sorted = [...list];
     if (sort === "price-asc") sorted.sort((a, b) => a.basePrice - b.basePrice);
     if (sort === "price-desc") sorted.sort((a, b) => b.basePrice - a.basePrice);
-    // Remove popular sort for now or implement differently, since we don't have popularity
-    if (sort === "popular") sorted.sort((a, b) => (b.isActive ? 1 : 0) - (a.isActive ? 1 : 0));
     if (sort === "newest")
       sorted.sort((a, b) => +new Date(b.createdAt || "") - +new Date(a.createdAt || ""));
     return sorted;
@@ -64,17 +92,23 @@ function Shop() {
 
   const reset = () => {
     setSelected([]);
-    setMaxPrice(350);
+    setMaxPrice(priceMax);
+    setUserAdjustedPrice(false);
     setInStockOnly(false);
   };
 
   const filters = (
     <Filters
       products={products}
+      categories={availableCategories}
       selected={selected}
       setSelected={setSelected}
       maxPrice={maxPrice}
-      setMaxPrice={setMaxPrice}
+      priceMax={priceMax}
+      setMaxPrice={(n) => {
+        setUserAdjustedPrice(true);
+        setMaxPrice(n);
+      }}
       inStockOnly={inStockOnly}
       setInStockOnly={setInStockOnly}
       reset={reset}
@@ -112,7 +146,6 @@ function Shop() {
             <option value="newest">Newest</option>
             <option value="price-asc">Price: low to high</option>
             <option value="price-desc">Price: high to low</option>
-            <option value="popular">Popularity</option>
           </select>
         </label>
       </div>
@@ -195,24 +228,28 @@ function Shop() {
 
 function Filters({
   products,
+  categories,
   selected,
   setSelected,
   maxPrice,
+  priceMax,
   setMaxPrice,
   inStockOnly,
   setInStockOnly,
   reset,
 }: {
   products: Product[];
-  selected: Category[];
-  setSelected: (next: Category[]) => void;
+  categories: string[];
+  selected: string[];
+  setSelected: (next: string[]) => void;
   maxPrice: number;
+  priceMax: number;
   setMaxPrice: (n: number) => void;
   inStockOnly: boolean;
   setInStockOnly: (b: boolean) => void;
   reset: () => void;
 }) {
-  const toggle = (c: Category) =>
+  const toggle = (c: string) =>
     setSelected(selected.includes(c) ? selected.filter((x) => x !== c) : [...selected, c]);
 
   return (
@@ -221,12 +258,12 @@ function Filters({
         <p className="eyebrow text-[10px] text-muted-foreground">Category</p>
         <div className="mt-4 space-y-1">
           {categories.map((c) => {
-            const active = selected.includes(c.name);
+            const active = selected.includes(c);
             return (
               <button
-                key={c.name}
+                key={c}
                 type="button"
-                onClick={() => toggle(c.name)}
+                onClick={() => toggle(c)}
                 aria-pressed={active}
                 className={`flex h-11 w-full items-center justify-between rounded-sm px-3 text-sm transition-colors duration-150 ${
                   active
@@ -234,9 +271,9 @@ function Filters({
                     : "text-foreground hover:bg-secondary"
                 }`}
               >
-                {c.name}
+                {c}
                 <span className="text-xs opacity-70 tabular-nums">
-                  {products.filter((p) => p.category === c.name).length}
+                  {products.filter((p) => p.category === c).length}
                 </span>
               </button>
             );
@@ -252,7 +289,7 @@ function Filters({
         <input
           type="range"
           min={24}
-          max={350}
+          max={priceMax}
           step={2}
           value={maxPrice}
           onChange={(e) => setMaxPrice(Number(e.target.value))}

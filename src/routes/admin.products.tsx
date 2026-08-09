@@ -19,7 +19,6 @@ import {
 } from "@/components/admin/parts";
 import { EASE } from "@/components/Reveal";
 import { formatPrice } from "@/data/products";
-import { categories as CATEGORY_LIST } from "@/data/products";
 import {
   useAdminProducts,
   useCreateProduct,
@@ -28,6 +27,7 @@ import {
   useDuplicateProduct,
   useBulkSetActive,
 } from "@/hooks/admin/useAdminProducts";
+import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
 import type { Product } from "@/types/storefront";
 import type { CreateProductInput } from "@/types/admin";
 
@@ -133,13 +133,17 @@ function formToInput(form: FormState): CreateProductInput {
 
 function ProductsPage() {
   const { data: products = [], isLoading } = useAdminProducts();
+  const { data: categoryRows = [] } = useAdminCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProducts = useDeleteProducts();
   const duplicateProduct = useDuplicateProduct();
   const bulkSetActive = useBulkSetActive();
 
-  const categories = useMemo(() => CATEGORY_LIST.map((c) => c.name), []);
+  const categories = useMemo(
+    () => [...categoryRows].map((c) => c.name).sort((a, b) => a.localeCompare(b)),
+    [categoryRows],
+  );
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -149,7 +153,7 @@ function ProductsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [editing, setEditing] = useState<Product | null>(null);
   const [formOpen, setFormOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm(categories[0] ?? "Apparel"));
+  const [form, setForm] = useState<FormState>(emptyForm(""));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<string[] | null>(null);
 
@@ -177,7 +181,7 @@ function ProductsPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm(emptyForm(categories[0] ?? "Apparel"));
+    setForm(emptyForm(categories[0] ?? ""));
     setErrors({});
     setFormOpen(true);
   };
@@ -192,6 +196,7 @@ function ProductsPage() {
   const submit = async () => {
     const next: Record<string, string> = {};
     if (!form.name.trim()) next["name"] = "Name is required.";
+    if (!form.category) next["category"] = "Pick a category.";
     const price = Number(form.price);
     if (!form.price || Number.isNaN(price) || price <= 0) next["price"] = "Enter a price above 0.";
     if (!form.description.trim() || form.description.trim().length < 10)
@@ -493,12 +498,15 @@ function ProductsPage() {
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Category">
+            <Field label="Category" error={errors["category"]}>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className={inputCls}
               >
+                <option value="" disabled>
+                  {categories.length ? "Select a category" : "No categories yet"}
+                </option>
                 {categories.map((c) => (
                   <option key={c} value={c}>
                     {c}
@@ -661,7 +669,7 @@ function ProductsPage() {
                 <p className="truncate text-sm font-semibold tracking-tight">
                   {form.name || "Untitled product"}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{form.category}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{form.category || "No category"}</p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-primary tabular-nums">
                 {formatPrice(Number(form.price) || 0)}

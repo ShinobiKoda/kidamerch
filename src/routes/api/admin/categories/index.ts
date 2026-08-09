@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { requireRole, AuthError } from '@/server/utils/require-role'
 import type { Category, CreateCategoryInput } from '@/types/admin'
 
-export const Route = createFileRoute('/api/admin/categories/categories')({
+export const Route = createFileRoute('/api/admin/categories/')({
   server: {
     handlers: {
       GET: async ({ request }) => {

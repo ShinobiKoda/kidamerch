@@ -27,8 +27,8 @@ import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customer
 import { Route as AdminCustomersEmailRouteImport } from './routes/admin.customers.$email'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
+import { Route as ApiAdminCategoriesIndexRouteImport } from './routes/api/admin/categories/index'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
-import { Route as ApiAdminCategoriesCategoriesRouteImport } from './routes/api/admin/categories/categories'
 import { Route as ApiAdminProductsIndexRouteImport } from './routes/api/admin/products/index'
 import { Route as ApiAdminProductsIdRouteImport } from './routes/api/admin/products/$id'
 
@@ -122,17 +122,16 @@ const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
   path: '/orders/$id',
   getParentRoute: () => AdminRoute,
 } as any)
-const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
-  id: '/api/admin/categories/$id',
-  path: '/api/admin/categories/$id',
+const ApiAdminCategoriesIndexRoute = ApiAdminCategoriesIndexRouteImport.update({
+  id: '/api/admin/categories/',
+  path: '/api/admin/categories/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAdminCategoriesCategoriesRoute =
-  ApiAdminCategoriesCategoriesRouteImport.update({
-    id: '/api/admin/categories/categories',
-    path: '/api/admin/categories/categories',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminCategoriesRoute,
+} as any)
 const ApiAdminProductsIndexRoute = ApiAdminProductsIndexRouteImport.update({
   id: '/api/admin/products/',
   path: '/api/admin/products/',
@@ -164,8 +163,8 @@ export interface FileRoutesByFullPath {
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
-  '/api/admin/categories/categories': typeof ApiAdminCategoriesCategoriesRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
+  '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -187,8 +186,8 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
-  '/api/admin/categories/categories': typeof ApiAdminCategoriesCategoriesRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
+  '/api/admin/categories': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/products': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -212,8 +211,8 @@ export interface FileRoutesById {
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
-  '/api/admin/categories/categories': typeof ApiAdminCategoriesCategoriesRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
+  '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -238,8 +237,8 @@ export interface FileRouteTypes {
     | '/admin/customers/'
     | '/admin/orders/'
     | '/api/admin/categories/$id'
-    | '/api/admin/categories/categories'
     | '/api/admin/products/$id'
+    | '/api/admin/categories/'
     | '/api/admin/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -261,8 +260,8 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/api/admin/categories/$id'
-    | '/api/admin/categories/categories'
     | '/api/admin/products/$id'
+    | '/api/admin/categories'
     | '/api/admin/products'
   id:
     | '__root__'
@@ -285,8 +284,8 @@ export interface FileRouteTypes {
     | '/admin/customers/'
     | '/admin/orders/'
     | '/api/admin/categories/$id'
-    | '/api/admin/categories/categories'
     | '/api/admin/products/$id'
+    | '/api/admin/categories/'
     | '/api/admin/products/'
   fileRoutesById: FileRoutesById
 }
@@ -299,9 +298,8 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   WishlistRoute: typeof WishlistRoute
   ProductIdRoute: typeof ProductIdRoute
-  ApiAdminCategoriesIdRoute: typeof ApiAdminCategoriesIdRoute
-  ApiAdminCategoriesCategoriesRoute: typeof ApiAdminCategoriesCategoriesRoute
   ApiAdminProductsIdRoute: typeof ApiAdminProductsIdRoute
+  ApiAdminCategoriesIndexRoute: typeof ApiAdminCategoriesIndexRoute
   ApiAdminProductsIndexRoute: typeof ApiAdminProductsIndexRoute
 }
 
@@ -433,19 +431,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/api/admin/categories/$id': {
-      id: '/api/admin/categories/$id'
-      path: '/api/admin/categories/$id'
-      fullPath: '/api/admin/categories/$id'
-      preLoaderRoute: typeof ApiAdminCategoriesIdRouteImport
+    '/api/admin/categories/': {
+      id: '/api/admin/categories/'
+      path: '/api/admin/categories'
+      fullPath: '/api/admin/categories/'
+      preLoaderRoute: typeof ApiAdminCategoriesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/admin/categories/categories': {
-      id: '/api/admin/categories/categories'
-      path: '/api/admin/categories/categories'
-      fullPath: '/api/admin/categories/categories'
-      preLoaderRoute: typeof ApiAdminCategoriesCategoriesRouteImport
-      parentRoute: typeof rootRouteImport
+    '/api/admin/categories/$id': {
+      id: '/api/admin/categories/$id'
+      path: '/$id'
+      fullPath: '/api/admin/categories/$id'
+      preLoaderRoute: typeof ApiAdminCategoriesIdRouteImport
+      parentRoute: typeof ApiAdminCategoriesRoute
     }
     '/api/admin/products/': {
       id: '/api/admin/products/'
@@ -501,9 +499,8 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   WishlistRoute: WishlistRoute,
   ProductIdRoute: ProductIdRoute,
-  ApiAdminCategoriesIdRoute: ApiAdminCategoriesIdRoute,
-  ApiAdminCategoriesCategoriesRoute: ApiAdminCategoriesCategoriesRoute,
   ApiAdminProductsIdRoute: ApiAdminProductsIdRoute,
+  ApiAdminCategoriesIndexRoute: ApiAdminCategoriesIndexRoute,
   ApiAdminProductsIndexRoute: ApiAdminProductsIndexRoute,
 }
 export const routeTree = rootRouteImport

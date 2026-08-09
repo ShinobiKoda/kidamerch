@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   EmptyState,
@@ -11,27 +12,35 @@ import {
   inputCls,
 } from "@/components/admin/parts";
 import { formatPrice } from "@/data/products";
-import { useData, type OrderStatus } from "@/lib/data-store";
+import { useAdminOrders, useAdvanceOrder } from "@/hooks/admin/useAdminOrders";
+import type { Order, OrderStatus } from "@/types/admin";
 
 export const Route = createFileRoute("/admin/orders/")({
   component: OrdersPage,
 });
 
 const STATUSES: OrderStatus[] = [
-  "Pending",
-  "Processing",
-  "Shipped",
-  "Delivered",
-  "Cancelled",
-  "Refunded",
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "refunded",
 ];
+
+// DB stores lowercase status/payment values — UI shows Title Case.
+function statusLabel(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 const PER_PAGE = 10;
 
 function OrdersPage() {
-  const { orders, ready, advanceOrder } = useData();
+  const { data: orders = [], isLoading } = useAdminOrders();
+  const advanceOrder = useAdvanceOrder();
+
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState<"all" | OrderStatus>("all");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
 
@@ -58,10 +67,12 @@ function OrdersPage() {
 
   const counts = STATUSES.map((s) => ({ s, n: orders.filter((o) => o.status === s).length }));
 
+  const canAdvance = (s: OrderStatus) => ["pending", "processing", "shipped"].includes(s);
+
   return (
     <AdminShell
       title="Orders"
-      description="Every mock order, including checkouts placed in the storefront. Advance fulfilment or open an order for the full timeline."
+      description="Orders placed through the storefront. Advance fulfilment or open an order for the full timeline."
     >
       <div className="mb-4 flex flex-wrap gap-2">
         <button
@@ -85,7 +96,7 @@ function OrdersPage() {
               status === s ? "border-primary bg-primary/10 text-primary" : "border-border"
             }`}
           >
-            {s} {n}
+            {statusLabel(s)} {n}
           </button>
         ))}
       </div>
@@ -118,12 +129,12 @@ function OrdersPage() {
           </select>
         </div>
 
-        {!ready ? (
+        {isLoading ? (
           <TableSkeleton rows={8} cols={6} />
         ) : rows.length === 0 ? (
           <EmptyState
             title="No orders found"
-            body="Adjust the filters, or place a mock order through the storefront checkout to see it land here."
+            body="Adjust the filters, or place an order through the storefront checkout to see it land here."
           />
         ) : (
           <div className="overflow-x-auto">
@@ -140,7 +151,7 @@ function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((o) => (
+                {rows.map((o: Order) => (
                   <tr key={o.id} className="border-b border-border last:border-0 hover:bg-secondary/40">
                     <td className="px-3 py-3">
                       <Link
@@ -148,11 +159,11 @@ function OrdersPage() {
                         params={{ id: o.id }}
                         className="font-semibold tabular-nums hover:text-primary"
                       >
-                        {o.id}
+                        {o.id.slice(0, 8)}
                       </Link>
                     </td>
                     <td className="px-3 py-3">
-                      <p className="font-medium">{o.customerName}</p>
+                      <p className="font-medium">{o.customerName || "Guest"}</p>
                       <p className="text-xs text-muted-foreground">{o.customerEmail}</p>
                     </td>
                     <td className="px-3 py-3 text-muted-foreground">
@@ -162,20 +173,23 @@ function OrdersPage() {
                       })}
                     </td>
                     <td className="px-3 py-3 tabular-nums">
-                      {o.items.reduce((n, i) => n + i.qty, 0)}
+                      {o.items.reduce((n, i) => n + i.quantity, 0)}
                     </td>
                     <td className="px-3 py-3 font-semibold tabular-nums">{formatPrice(o.total)}</td>
                     <td className="px-3 py-3">
-                      <StatusBadge status={o.payment} />
+                      <StatusBadge status={statusLabel(o.paymentStatus)} />
                     </td>
                     <td className="px-3 py-3">
-                      <StatusBadge status={o.status} />
+                      <StatusBadge status={statusLabel(o.status)} />
                     </td>
                     <td className="px-3 py-3 text-right">
-                      {["Pending", "Processing", "Shipped"].includes(o.status) && (
+                      {canAdvance(o.status) && (
                         <button
                           type="button"
-                          onClick={() => advanceOrder(o.id)}
+                          onClick={async () => {
+                            await advanceOrder.mutateAsync(o);
+                            toast.success("Order advanced");
+                          }}
                           className="text-xs font-semibold text-primary"
                         >
                           Advance

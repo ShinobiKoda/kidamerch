@@ -29,6 +29,8 @@ import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.inde
 import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
 import { Route as ApiAdminCategoriesIndexRouteImport } from './routes/api/admin/categories/index'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
+import { Route as ApiAdminOrdersIndexRouteImport } from './routes/api/admin/orders/index'
+import { Route as ApiAdminOrdersIdRouteImport } from './routes/api/admin/orders/$id'
 import { Route as ApiAdminProductsIndexRouteImport } from './routes/api/admin/products/index'
 import { Route as ApiAdminProductsIdRouteImport } from './routes/api/admin/products/$id'
 
@@ -132,6 +134,16 @@ const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiAdminCategoriesRoute,
 } as any)
+const ApiAdminOrdersIndexRoute = ApiAdminOrdersIndexRouteImport.update({
+  id: '/api/admin/orders/',
+  path: '/api/admin/orders/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminOrdersIdRoute = ApiAdminOrdersIdRouteImport.update({
+  id: '/api/admin/orders/$id',
+  path: '/api/admin/orders/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminProductsIndexRoute = ApiAdminProductsIndexRouteImport.update({
   id: '/api/admin/products/',
   path: '/api/admin/products/',
@@ -163,8 +175,10 @@ export interface FileRoutesByFullPath {
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/orders/$id': typeof ApiAdminOrdersIdRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
+  '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -186,8 +200,10 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/orders/$id': typeof ApiAdminOrdersIdRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories': typeof ApiAdminCategoriesIndexRoute
+  '/api/admin/orders': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -211,8 +227,10 @@ export interface FileRoutesById {
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
+  '/api/admin/orders/$id': typeof ApiAdminOrdersIdRoute
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
+  '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -237,8 +255,10 @@ export interface FileRouteTypes {
     | '/admin/customers/'
     | '/admin/orders/'
     | '/api/admin/categories/$id'
+    | '/api/admin/orders/$id'
     | '/api/admin/products/$id'
     | '/api/admin/categories/'
+    | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -260,8 +280,10 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/orders'
     | '/api/admin/categories/$id'
+    | '/api/admin/orders/$id'
     | '/api/admin/products/$id'
     | '/api/admin/categories'
+    | '/api/admin/orders'
     | '/api/admin/products'
   id:
     | '__root__'
@@ -284,8 +306,10 @@ export interface FileRouteTypes {
     | '/admin/customers/'
     | '/admin/orders/'
     | '/api/admin/categories/$id'
+    | '/api/admin/orders/$id'
     | '/api/admin/products/$id'
     | '/api/admin/categories/'
+    | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesById: FileRoutesById
 }
@@ -298,8 +322,10 @@ export interface RootRouteChildren {
   ShopRoute: typeof ShopRoute
   WishlistRoute: typeof WishlistRoute
   ProductIdRoute: typeof ProductIdRoute
+  ApiAdminOrdersIdRoute: typeof ApiAdminOrdersIdRoute
   ApiAdminProductsIdRoute: typeof ApiAdminProductsIdRoute
   ApiAdminCategoriesIndexRoute: typeof ApiAdminCategoriesIndexRoute
+  ApiAdminOrdersIndexRoute: typeof ApiAdminOrdersIndexRoute
   ApiAdminProductsIndexRoute: typeof ApiAdminProductsIndexRoute
 }
 
@@ -445,6 +471,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminCategoriesIdRouteImport
       parentRoute: typeof ApiAdminCategoriesRoute
     }
+    '/api/admin/orders/': {
+      id: '/api/admin/orders/'
+      path: '/api/admin/orders'
+      fullPath: '/api/admin/orders/'
+      preLoaderRoute: typeof ApiAdminOrdersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/orders/$id': {
+      id: '/api/admin/orders/$id'
+      path: '/api/admin/orders/$id'
+      fullPath: '/api/admin/orders/$id'
+      preLoaderRoute: typeof ApiAdminOrdersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/products/': {
       id: '/api/admin/products/'
       path: '/api/admin/products'
@@ -499,8 +539,10 @@ const rootRouteChildren: RootRouteChildren = {
   ShopRoute: ShopRoute,
   WishlistRoute: WishlistRoute,
   ProductIdRoute: ProductIdRoute,
+  ApiAdminOrdersIdRoute: ApiAdminOrdersIdRoute,
   ApiAdminProductsIdRoute: ApiAdminProductsIdRoute,
   ApiAdminCategoriesIndexRoute: ApiAdminCategoriesIndexRoute,
+  ApiAdminOrdersIndexRoute: ApiAdminOrdersIndexRoute,
   ApiAdminProductsIndexRoute: ApiAdminProductsIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -32,6 +32,35 @@ export type Database = {
         }
         Relationships: []
       }
+      order_history: {
+        Row: {
+          at: string
+          id: string
+          label: string
+          order_id: string
+        }
+        Insert: {
+          at?: string
+          id?: string
+          label: string
+          order_id: string
+        }
+        Update: {
+          at?: string
+          id?: string
+          label?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -88,8 +117,15 @@ export type Database = {
           guest_phone: string | null
           id: string
           notes: string | null
+          payment_status: string
+          reason: string | null
+          shipping_address: string | null
+          shipping_cost: number
           status: string
+          subtotal: number | null
+          tax: number
           total_estimate: number
+          tracking_number: string | null
           user_id: string | null
           whatsapp_sent_at: string | null
         }
@@ -100,8 +136,15 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           notes?: string | null
+          payment_status?: string
+          reason?: string | null
+          shipping_address?: string | null
+          shipping_cost?: number
           status?: string
+          subtotal?: number | null
+          tax?: number
           total_estimate: number
+          tracking_number?: string | null
           user_id?: string | null
           whatsapp_sent_at?: string | null
         }
@@ -112,8 +155,15 @@ export type Database = {
           guest_phone?: string | null
           id?: string
           notes?: string | null
+          payment_status?: string
+          reason?: string | null
+          shipping_address?: string | null
+          shipping_cost?: number
           status?: string
+          subtotal?: number | null
+          tax?: number
           total_estimate?: number
+          tracking_number?: string | null
           user_id?: string | null
           whatsapp_sent_at?: string | null
         }

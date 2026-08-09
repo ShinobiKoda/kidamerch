@@ -1,4 +1,6 @@
 import type { Product, DBProductWithRelations } from '@/types/storefront'
+import type { Order, OrderHistoryEntry, OrderItem } from '@/types/admin'
+
 
 export function transformProduct(dbProduct: DBProductWithRelations): Product {
   return {
@@ -28,5 +30,57 @@ export function transformProduct(dbProduct: DBProductWithRelations): Product {
       url: img.url,
       position: img.position ?? idx, 
     })),
+  }
+}
+
+
+const STATUS_LABELS: Record<string, Order['status']> = {
+  pending: 'pending',
+  processing: 'processing',
+  shipped: 'shipped',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
+}
+
+export function transformOrder(
+  dbOrder: any,
+  items: any[],
+  history: any[],
+  resolvedEmail: string,
+  resolvedName: string,
+): Order {
+  const itemRows: OrderItem[] = items.map((it) => ({
+    id: it.id,
+    variantId: it.variant_id,
+    productName: it.product_name,
+    variantDetails: it.variant_details,
+    quantity: it.quantity,
+    priceAtOrder: Number(it.price_at_order),
+  }))
+
+  const historyRows: OrderHistoryEntry[] = history
+    .map((h) => ({ label: h.label, at: h.at }))
+    .sort((a, b) => +new Date(a.at) - +new Date(b.at))
+
+  return {
+    id: dbOrder.id,
+    customerName: dbOrder.guest_name ?? resolvedName,
+    customerEmail: dbOrder.guest_email ?? resolvedEmail,
+    customerPhone: dbOrder.guest_phone ?? null,
+    status: STATUS_LABELS[dbOrder.status] ?? 'pending',
+    paymentStatus: dbOrder.payment_status ?? 'pending',
+    subtotal: Number(dbOrder.subtotal ?? dbOrder.total_estimate),
+    shippingCost: Number(dbOrder.shipping_cost ?? 0),
+    tax: Number(dbOrder.tax ?? 0),
+    total: Number(dbOrder.total_estimate),
+    shippingAddress: dbOrder.shipping_address,
+    trackingNumber: dbOrder.tracking_number,
+    reason: dbOrder.reason,
+    notes: dbOrder.notes,
+    whatsappSentAt: dbOrder.whatsapp_sent_at,
+    items: itemRows,
+    history: historyRows,
+    createdAt: dbOrder.created_at,
   }
 }

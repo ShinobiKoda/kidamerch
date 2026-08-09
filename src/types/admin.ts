@@ -1,6 +1,11 @@
 import type { Product } from '@/types/storefront'
 
 export type AdminProduct = Product
+// src/types/admin.ts — add
+
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded'
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded'
+
 
 export interface CreateVariantInput {
   size?: string | null
@@ -30,6 +35,50 @@ export interface Category {
 
 export interface CreateCategoryInput {
   name: string
+}
+
+
+export interface OrderHistoryEntry {
+  label: string
+  at: string
+}
+
+export interface OrderItem {
+  id: string
+  variantId: string
+  productName: string
+  variantDetails: string | null
+  quantity: number
+  priceAtOrder: number
+}
+
+export interface Order {
+  id: string
+  customerName: string
+  customerEmail: string
+  customerPhone: string | null
+  status: OrderStatus
+  paymentStatus: PaymentStatus
+  subtotal: number
+  shippingCost: number
+  tax: number
+  total: number
+  shippingAddress: string | null
+  trackingNumber: string | null
+  reason: string | null
+  notes: string | null
+  whatsappSentAt: string | null
+  items: OrderItem[]
+  history: OrderHistoryEntry[]
+  createdAt: string
+}
+
+export interface UpdateOrderInput {
+  status?: OrderStatus | undefined
+  paymentStatus?: PaymentStatus | undefined
+  trackingNumber?: string | undefined
+  reason?: string | undefined
+  historyLabel?: string | undefined
 }
 
 export type UpdateProductInput = CreateProductInput

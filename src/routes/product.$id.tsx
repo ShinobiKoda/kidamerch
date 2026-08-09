@@ -74,14 +74,11 @@ function ProductDetail() {
   const wished = isWished(product.id);
 
   const handleAdd = () => {
-    // Find the actual variant object based on the selected size/color/design
-    const selectedVariant = product.variants.find(
-      (v) => (v.size || v.color || v.design || "Standard") === variant
-    ) || product.variants[0];
-    
-    // Pass the ProductVariant to addToCart. The store might expect a different format if it was written for string variants, 
-    // but assuming it handles it or we'll need to adapt it. We pass the variant ID or object.
-    addToCart(product, selectedVariant as any, qty); // Wait, store expects what? We'll cast to any for now to avoid TS errors.
+    const selectedVariant =
+      product.variants.find((v) => (v.size || v.color || v.design || "Standard") === variant) ||
+      product.variants[0];
+
+    addToCart(product, selectedVariant, qty);
     setAdded(true);
     setTimeout(() => setAdded(false), 1400);
   };

@@ -25,6 +25,8 @@ import {
 } from "@/components/admin/parts";
 import { formatPrice } from "@/data/products";
 import { makeSalesSeries, useData } from "@/lib/data-store";
+import { useAdminProducts } from "@/hooks/admin/useAdminProducts";
+import type { Product } from "@/types/storefront";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
@@ -58,21 +60,38 @@ function Kpi({
   );
 }
 
+// Real products don't carry a single top-level stock number — stock lives per variant.
+function totalStock(product: Product): number {
+  return product.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
+}
+
 function Dashboard() {
-  const { orders, products, events, categories, lowStockThreshold } = useData();
+  // Real data
+  const { data: products = [], isLoading: productsLoading, isError: productsError } =
+    useAdminProducts();
+
+  // Still mock — no admin API for orders/events/categories yet
+  const { orders, events, categories, lowStockThreshold } = useData();
+
   const [range, setRange] = useState<7 | 30>(7);
   const series = useMemo(() => makeSalesSeries(range), [range]);
 
   const paid = orders.filter((o) => o.status !== "Cancelled" && o.status !== "Refunded");
   const revenue = paid.reduce((s, o) => s + o.total, 0);
   const aov = paid.length ? revenue / paid.length : 0;
-  const lowStock = products.filter((p) => p.stock <= lowStockThreshold);
+
+  const lowStock = useMemo(
+    () => products.filter((p) => totalStock(p) <= lowStockThreshold),
+    [products, lowStockThreshold],
+  );
   const upcoming = events.filter((e) => e.status === "Upcoming").length;
 
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
     for (const o of paid) {
       for (const it of o.items) {
+        // NOTE: order items still reference mock product IDs — this will
+        // mismatch against real product IDs until orders are wired up too.
         const product = products.find((p) => p.id === it.productId);
         const key = product?.category ?? "Other";
         map.set(key, (map.get(key) ?? 0) + it.price * it.qty);
@@ -86,14 +105,20 @@ function Dashboard() {
   const recent = [...orders]
     .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
     .slice(0, 6);
+
   const avgPrice = products.length
-    ? products.reduce((s, p) => s + p.price, 0) / products.length
+    ? products.reduce((s, p) => s + p.basePrice, 0) / products.length
     : 0;
+
+  const activeCount = products.filter((p) => p.isActive).length;
+  const draftCount = products.filter((p) => !p.isActive).length;
+  const outOfStockCount = products.filter((p) => totalStock(p) === 0).length;
+
   const snapshot: { label: string; value: string }[] = [
     { label: "Products", value: String(products.length) },
-    { label: "Active", value: String(products.filter((p) => p.status === "Active").length) },
-    { label: "Drafts", value: String(products.filter((p) => p.status === "Draft").length) },
-    { label: "Out of stock", value: String(products.filter((p) => p.stock === 0).length) },
+    { label: "Active", value: String(activeCount) },
+    { label: "Drafts", value: String(draftCount) },
+    { label: "Out of stock", value: String(outOfStockCount) },
     { label: "Categories", value: String(categories.length) },
     { label: "Avg. price", value: formatPrice(avgPrice) },
   ];
@@ -113,13 +138,19 @@ function Dashboard() {
         </>
       }
     >
+      {productsError && (
+        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Couldn't load product data. Catalogue stats below may be incomplete.
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="Total revenue" value={formatPrice(revenue)} delta="12.4% vs prev." index={0} />
         <Kpi label="Orders" value={String(orders.length)} delta="8 new this week" index={1} />
         <Kpi label="Avg. order value" value={formatPrice(aov)} delta="3.1% vs prev." index={2} />
         <Kpi
           label="Active products"
-          value={String(products.filter((p) => p.status === "Active").length)}
+          value={productsLoading ? "—" : String(activeCount)}
           delta={`${upcoming} upcoming events`}
           index={3}
         />
@@ -255,7 +286,6 @@ function Dashboard() {
                   </span>
                 </Link>
               ))}
-
             </div>
           )}
         </Panel>
@@ -269,7 +299,9 @@ function Dashboard() {
               </Link>
             }
           />
-          {lowStock.length === 0 ? (
+          {productsLoading ? (
+            <EmptyState title="Loading…" body="Fetching current stock levels." />
+          ) : lowStock.length === 0 ? (
             <EmptyState title="Stock is healthy" body={`Nothing is at or below ${lowStockThreshold} units.`} />
           ) : (
             <ul className="divide-y divide-border">
@@ -277,7 +309,7 @@ function Dashboard() {
                 <li key={p.id} className="flex items-center gap-3 px-4 py-3">
                   <TriangleAlert size={14} className="shrink-0 text-primary" />
                   <span className="min-w-0 flex-1 truncate text-sm">{p.name}</span>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums">{p.stock}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums">{totalStock(p)}</span>
                 </li>
               ))}
             </ul>

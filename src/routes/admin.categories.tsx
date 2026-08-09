@@ -14,7 +14,13 @@ import {
   btnSubtle,
   inputCls,
 } from "@/components/admin/parts";
-import { useData } from "@/lib/data-store";
+import { useAdminProducts } from "@/hooks/admin/useAdminProducts";
+import {
+  useAdminCategories,
+  useCreateCategory,
+  useRenameCategory,
+  useDeleteCategory,
+} from "@/hooks/admin/useAdminCategories";
 
 export const Route = createFileRoute("/admin/categories")({
   head: () => ({
@@ -30,42 +36,55 @@ export const Route = createFileRoute("/admin/categories")({
 });
 
 function CategoriesPage() {
-  const {
-    categories,
-    productCountByCategory,
-    createCategory,
-    renameCategory,
-    deleteCategory,
-  } = useData();
+  const { data: categories = [], isLoading } = useAdminCategories();
+  const { data: products = [] } = useAdminProducts();
+  const createCategory = useCreateCategory();
+  const renameCategory = useRenameCategory();
+  const deleteCategory = useDeleteCategory();
 
   const [draft, setDraft] = useState("");
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null); // category id
   const [editValue, setEditValue] = useState("");
-  const [confirm, setConfirm] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; name: string } | null>(null);
   const [reassign, setReassign] = useState("");
 
-  const sorted = useMemo(() => [...categories].sort((a, b) => a.localeCompare(b)), [categories]);
+  const productCountByCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const p of products) map[p.category] = (map[p.category] ?? 0) + 1;
+    return map;
+  }, [products]);
+
+  const sorted = useMemo(
+    () => [...categories].sort((a, b) => a.name.localeCompare(b.name)),
+    [categories],
+  );
   const others = useMemo(
-    () => sorted.filter((c) => c !== confirm),
+    () => sorted.filter((c) => c.id !== confirm?.id),
     [sorted, confirm],
   );
 
-  const add = () => {
+  const add = async () => {
     if (!draft.trim()) return;
-    if (createCategory(draft)) {
+    try {
+      await createCategory.mutateAsync({ name: draft.trim() });
       toast.success("Category added", { description: draft.trim() });
       setDraft("");
-    } else {
-      toast.error("That category already exists");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "That category already exists");
     }
   };
 
-  const saveRename = (from: string) => {
-    if (renameCategory(from, editValue)) {
-      toast.success("Category renamed", { description: `${from} → ${editValue.trim()}` });
-      setEditing(null);
-    } else {
+  const saveRename = async (id: string) => {
+    if (!editValue.trim()) {
       toast.error("Pick a unique, non-empty name");
+      return;
+    }
+    try {
+      await renameCategory.mutateAsync({ id, name: editValue.trim() });
+      toast.success("Category renamed");
+      setEditing(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Pick a unique, non-empty name");
     }
   };
 
@@ -77,25 +96,27 @@ function CategoriesPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel className="lg:col-span-2">
           <PanelHead title={`All categories (${sorted.length})`} />
-          {sorted.length === 0 ? (
+          {isLoading ? (
+            <EmptyState title="Loading…" body="Fetching categories." />
+          ) : sorted.length === 0 ? (
             <EmptyState title="No categories yet" body="Add your first category to start grouping products." />
           ) : (
             <ul className="divide-y divide-border">
               {sorted.map((c) => {
-                const count = productCountByCategory[c] ?? 0;
-                const isEditing = editing === c;
+                const count = productCountByCategory[c.name] ?? 0;
+                const isEditing = editing === c.id;
                 return (
-                  <li key={c} className="px-4 py-3.5">
+                  <li key={c.id} className="px-4 py-3.5">
                     {isEditing ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <input
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && saveRename(c)}
-                          aria-label={`Rename ${c}`}
-                          className={`${inputCls} min-w-[160px] flex-1`}
+                          onKeyDown={(e) => e.key === "Enter" && saveRename(c.id)}
+                          aria-label={`Rename ${c.name}`}
+                          className={`${inputCls} min-w-40 flex-1`}
                         />
-                        <button type="button" className={btnPrimary} onClick={() => saveRename(c)}>
+                        <button type="button" className={btnPrimary} onClick={() => saveRename(c.id)}>
                           Save
                         </button>
                         <button
@@ -113,7 +134,7 @@ function CategoriesPage() {
                           <Tags size={15} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold tracking-tight">{c}</p>
+                          <p className="truncate text-sm font-semibold tracking-tight">{c.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {count} {count === 1 ? "product" : "products"}
                           </p>
@@ -122,17 +143,17 @@ function CategoriesPage() {
                           <Link
                             to="/admin/products"
                             className={btnSubtle}
-                            aria-label={`View ${c} products`}
+                            aria-label={`View ${c.name} products`}
                           >
                             View
                           </Link>
                           <button
                             type="button"
                             className={btnSubtle}
-                            aria-label={`Rename ${c}`}
+                            aria-label={`Rename ${c.name}`}
                             onClick={() => {
-                              setEditing(c);
-                              setEditValue(c);
+                              setEditing(c.id);
+                              setEditValue(c.name);
                             }}
                           >
                             <Pencil size={14} />
@@ -140,9 +161,9 @@ function CategoriesPage() {
                           <button
                             type="button"
                             className={btnSubtle}
-                            aria-label={`Delete ${c}`}
+                            aria-label={`Delete ${c.name}`}
                             onClick={() => {
-                              setConfirm(c);
+                              setConfirm({ id: c.id, name: c.name });
                               setReassign("");
                             }}
                           >
@@ -170,7 +191,7 @@ function CategoriesPage() {
                 className={inputCls}
               />
             </Field>
-            <button type="button" onClick={add} className={`${btnPrimary} w-full`}>
+            <button type="button" onClick={add} className={`${btnPrimary} w-full`} disabled={createCategory.isPending}>
               <Plus size={15} /> Add category
             </button>
             <p className="text-xs text-muted-foreground">
@@ -182,24 +203,26 @@ function CategoriesPage() {
 
       <ConfirmDialog
         open={confirm !== null}
-        title={`Delete “${confirm ?? ""}”?`}
+        title={`Delete "${confirm?.name ?? ""}"?`}
         body={
-          confirm && (productCountByCategory[confirm] ?? 0) > 0
-            ? `${productCountByCategory[confirm]} product(s) use this category. Choose where they should go.`
+          confirm && (productCountByCategory[confirm.name] ?? 0) > 0
+            ? `${productCountByCategory[confirm.name]} product(s) use this category. Choose where they should go.`
             : "No products use this category, so it can be removed safely."
         }
         onCancel={() => setConfirm(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (confirm) {
-            deleteCategory(confirm, reassign || undefined);
-            toast.success(
-              reassign ? `Products moved to ${reassign}` : `“${confirm}” deleted`,
-            );
+            try {
+              await deleteCategory.mutateAsync({ id: confirm.id, reassignTo: reassign || undefined });
+              toast.success(reassign ? `Products moved to ${reassign}` : `"${confirm.name}" deleted`);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Failed to delete category");
+            }
           }
           setConfirm(null);
         }}
       >
-        {confirm && (productCountByCategory[confirm] ?? 0) > 0 && (
+        {confirm && (productCountByCategory[confirm.name] ?? 0) > 0 && (
           <Field label="Move products to">
             <select
               value={reassign}
@@ -208,8 +231,8 @@ function CategoriesPage() {
             >
               <option value="">Delete the products too</option>
               {others.map((c) => (
-                <option key={c} value={c}>
-                  {c}
+                <option key={c.id} value={c.name}>
+                  {c.name}
                 </option>
               ))}
             </select>

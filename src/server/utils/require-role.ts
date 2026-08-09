@@ -1,19 +1,23 @@
-import { createError, type H3Event, getHeader } from 'h3'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 type Role = 'admin' | 'superadmin'
 const RANK: Record<Role, number> = { admin: 1, superadmin: 2 }
 
-export async function requireRole(event: H3Event, minRole: Role = 'admin') {
-  const token = getHeader(event, 'authorization')?.replace('Bearer ', '')
-  if (!token) {
-    throw createError({ statusCode: 401, statusMessage: 'Missing auth token' })
+export class AuthError extends Response {
+  constructor(status: number, message: string) {
+    super(JSON.stringify({ message }), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
+}
+
+export async function requireRole(request: Request, minRole: Role = 'admin') {
+  const token = request.headers.get('authorization')?.replace('Bearer ', '')
+  if (!token) throw new AuthError(401, 'Missing auth token')
 
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token)
-  if (userError || !userData.user) {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid or expired session' })
-  }
+  if (userError || !userData.user) throw new AuthError(401, 'Invalid or expired session')
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
@@ -22,11 +26,11 @@ export async function requireRole(event: H3Event, minRole: Role = 'admin') {
     .single()
 
   if (profileError || !profile?.role || !profile.is_active) {
-    throw createError({ statusCode: 403, statusMessage: 'Not authorized' })
+    throw new AuthError(403, 'Not authorized')
   }
 
   if (RANK[profile.role as Role] < RANK[minRole]) {
-    throw createError({ statusCode: 403, statusMessage: `Requires ${minRole} role` })
+    throw new AuthError(403, `Requires ${minRole} role`)
   }
 
   return { user: userData.user, role: profile.role as Role }

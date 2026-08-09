@@ -22,4 +22,14 @@ export interface CreateProductInput {
   imageUrls?: string[]
 }
 
+export interface Category {
+  id: string
+  name: string
+  createdAt: string
+}
+
+export interface CreateCategoryInput {
+  name: string
+}
+
 export type UpdateProductInput = CreateProductInput

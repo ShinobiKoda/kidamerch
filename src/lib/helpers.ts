@@ -113,3 +113,13 @@ export function transformStoreSettings(row: DBStoreSettingsRow): StoreSettings {
     lowStockThreshold: row.low_stock_threshold,
   }
 }
+
+export function formatEventDate(dateString: string): string {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}

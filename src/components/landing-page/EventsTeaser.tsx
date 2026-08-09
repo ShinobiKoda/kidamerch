@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { Reveal, Stagger, StaggerItem } from "@/components/Reveal";
 import SectionHead from "./SectionHead";
-import { useUpcomingEvents } from "@/hooks/useEvents";
+import { useFeaturedEvents } from "@/hooks/useEvents";
 import { formatEventDate } from "@/lib/helpers";
 
 export default function EventsTeaser() {
-  const { data: upcoming = [], isLoading, isError } = useUpcomingEvents(3);
+  const { data: upcoming = [], isLoading, isError } = useFeaturedEvents(3);
 
   return (
     <section className="mx-auto max-w-7xl px-5 pt-24 sm:px-8">

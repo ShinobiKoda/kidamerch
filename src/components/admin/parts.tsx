@@ -198,7 +198,7 @@ export function ConfirmDialog({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[60] grid place-items-center bg-ink/60 px-4"
+          className="fixed inset-0 z-60 grid place-items-center bg-ink/60 px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

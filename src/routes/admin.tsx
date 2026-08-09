@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { AdminLogin } from "@/components/admin/AdminShell";
-import { useData } from "@/lib/data-store";
+import { useAuth } from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  const { ready, isAdmin } = useData();
+  const { ready, isAdmin } = useAuth();
   if (!ready) return <div className="min-h-screen bg-surface-2" />;
   if (!isAdmin) return <AdminLogin />;
   return <Outlet />;

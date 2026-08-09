@@ -10,7 +10,6 @@ export async function requireRole(event: H3Event, minRole: Role = 'admin') {
     throw createError({ statusCode: 401, statusMessage: 'Missing auth token' })
   }
 
-  // Verifies the JWT against Supabase Auth — not just decoding it
   const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token)
   if (userError || !userData.user) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid or expired session' })

@@ -92,7 +92,7 @@ function OrdersPage() {
 
       <Panel>
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-          <div className="relative min-w-[200px] flex-1">
+          <div className="relative min-w-50 flex-1">
             <Search
               size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -127,7 +127,7 @@ function OrdersPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-205 text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
                   {["Order", "Customer", "Date", "Items", "Total", "Payment", "Status", ""].map(

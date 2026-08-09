@@ -19,27 +19,34 @@ import {
 } from "@/components/admin/parts";
 import { EASE } from "@/components/Reveal";
 import { formatPrice } from "@/data/products";
+import { categories as CATEGORY_LIST } from "@/data/products";
 import {
-  useData,
-  type AdminProduct,
-  type ProductInput,
-  type ProductStatus,
-} from "@/lib/data-store";
+  useAdminProducts,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProducts,
+  useDuplicateProduct,
+  useBulkSetActive,
+} from "@/hooks/admin/useAdminProducts";
+import type { Product } from "@/types/storefront";
+import type { CreateProductInput } from "@/types/admin";
 
 export const Route = createFileRoute("/admin/products")({
   component: ProductsPage,
 });
 
 const PER_PAGE = 8;
-const STATUSES: ProductStatus[] = ["Active", "Draft", "Out of Stock"];
+const LOW_STOCK_THRESHOLD = 5;
+
+type DisplayStatus = "Active" | "Draft" | "Out of Stock";
+type FormStatus = "Active" | "Draft";
 
 type FormState = {
   name: string;
   category: string;
   price: string;
-  compareAtPrice: string;
   description: string;
-  status: ProductStatus;
+  status: FormStatus;
   stock: string;
   variants: { label: string; stock: string }[];
   images: string[];
@@ -49,7 +56,6 @@ const emptyForm = (category: string): FormState => ({
   name: "",
   category,
   price: "",
-  compareAtPrice: "",
   description: "",
   status: "Draft",
   stock: "0",
@@ -57,30 +63,83 @@ const emptyForm = (category: string): FormState => ({
   images: [],
 });
 
-const toForm = (p: AdminProduct): FormState => ({
-  name: p.name,
-  category: p.category,
-  price: String(p.price),
-  compareAtPrice: p.compareAtPrice ? String(p.compareAtPrice) : "",
-  description: p.description,
-  status: p.status,
-  stock: String(p.stock),
-  variants: p.variants.map((v) => ({ label: v, stock: String(p.variantStock[v] ?? 0) })),
-  images: [...p.images],
-});
+// A product only has "real" variants if at least one has a non-null
+// size/color/design — the silent single placeholder variant (all null)
+// created for stockless products doesn't count as a user-facing variant.
+function isPlaceholderVariant(v: Product["variants"][number]) {
+  return !v.size && !v.color && !v.design;
+}
+
+function totalStock(p: Product) {
+  return (p.variants ?? []).reduce((sum, v) => sum + (v.stock ?? 0), 0);
+}
+
+function displayStatus(p: Product): DisplayStatus {
+  if (totalStock(p) === 0) return "Out of Stock";
+  return p.isActive ? "Active" : "Draft";
+}
+
+const toForm = (p: Product): FormState => {
+  const realVariants = (p.variants ?? []).filter((v) => !isPlaceholderVariant(v));
+  const placeholder = (p.variants ?? []).find(isPlaceholderVariant);
+
+  return {
+    name: p.name,
+    category: p.category,
+    price: String(p.basePrice),
+    description: p.description ?? "",
+    status: p.isActive ? "Active" : "Draft",
+    stock: String(placeholder?.stock ?? 0),
+    variants: realVariants.map((v) => ({
+      label: v.size || v.color || v.design || "",
+      stock: String(v.stock ?? 0),
+    })),
+    images: (p.images ?? []).map((img) => img.url),
+  };
+};
+
+function formToInput(form: FormState): CreateProductInput {
+  const realVariants = form.variants.filter((v) => v.label.trim());
+
+  return {
+    name: form.name.trim(),
+    category: form.category,
+    basePrice: Number(form.price),
+    description: form.description.trim(),
+    isActive: form.status === "Active",
+    variants:
+      realVariants.length > 0
+        ? realVariants.map((v) => ({
+            size: v.label.trim(),
+            color: null,
+            design: null,
+            sku: null,
+            priceOverride: null,
+            stock: Number(v.stock) || 0,
+          }))
+        : [
+            {
+              size: null,
+              color: null,
+              design: null,
+              sku: null,
+              priceOverride: null,
+              stock: Number(form.stock) || 0,
+            },
+          ],
+    imageUrls: form.images.map((u) => u.trim()).filter(Boolean),
+  };
+}
 
 function ProductsPage() {
-  const {
-    products,
-    categories,
-    ready,
-    createProduct,
-    updateProduct,
-    duplicateProduct,
-    deleteProducts,
-    bulkStatus,
-    lowStockThreshold,
-  } = useData();
+  const { data: products = [], isLoading } = useAdminProducts();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const deleteProducts = useDeleteProducts();
+  const duplicateProduct = useDuplicateProduct();
+  const bulkSetActive = useBulkSetActive();
+
+  const categories = useMemo(() => CATEGORY_LIST.map((c) => c.name), []);
 
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -88,25 +147,26 @@ function ProductsPage() {
   const [sort, setSort] = useState("updated");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string[]>([]);
-  const [editing, setEditing] = useState<AdminProduct | null>(null);
+  const [editing, setEditing] = useState<Product | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm(categories[0] ?? "Apparel"));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<string[] | null>(null);
 
   const filtered = useMemo(() => {
-    const list = products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query.trim().toLowerCase()) &&
-        (category === "all" || p.category === category) &&
-        (status === "all" || p.status === status),
-    );
+    const list = products.filter((p) => {
+      const matchesQuery = p.name.toLowerCase().includes(query.trim().toLowerCase());
+      const matchesCategory = category === "all" || p.category === category;
+      const matchesStatus = status === "all" || displayStatus(p) === status;
+      return matchesQuery && matchesCategory && matchesStatus;
+    });
     const sorted = [...list];
-    if (sort === "price-asc") sorted.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
-    if (sort === "stock") sorted.sort((a, b) => a.stock - b.stock);
+    if (sort === "price-asc") sorted.sort((a, b) => a.basePrice - b.basePrice);
+    if (sort === "price-desc") sorted.sort((a, b) => b.basePrice - a.basePrice);
+    if (sort === "stock") sorted.sort((a, b) => totalStock(a) - totalStock(b));
     if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === "updated") sorted.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+    if (sort === "updated")
+      sorted.sort((a, b) => +new Date(b.createdAt || "") - +new Date(a.createdAt || ""));
     return sorted;
   }, [products, query, category, status, sort]);
 
@@ -122,49 +182,42 @@ function ProductsPage() {
     setFormOpen(true);
   };
 
-  const openEdit = (p: AdminProduct) => {
+  const openEdit = (p: Product) => {
     setEditing(p);
     setForm(toForm(p));
     setErrors({});
     setFormOpen(true);
   };
 
-  const submit = () => {
+  const submit = async () => {
     const next: Record<string, string> = {};
-    if (!form.name.trim()) next['name'] = "Name is required.";
+    if (!form.name.trim()) next["name"] = "Name is required.";
     const price = Number(form.price);
-    if (!form.price || Number.isNaN(price) || price <= 0) next['price'] = "Enter a price above 0.";
-    if (form.compareAtPrice && Number(form.compareAtPrice) <= price)
-      next['compareAtPrice'] = "Compare-at must exceed the price.";
+    if (!form.price || Number.isNaN(price) || price <= 0) next["price"] = "Enter a price above 0.";
     if (!form.description.trim() || form.description.trim().length < 10)
-      next['description'] = "Add at least 10 characters.";
-    if (form.variants.length === 0 && Number(form.stock) < 0) next['stock'] = "Stock cannot be negative.";
+      next["description"] = "Add at least 10 characters.";
+    if (form.variants.length === 0 && Number(form.stock) < 0)
+      next["stock"] = "Stock cannot be negative.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
-    const input: ProductInput = {
-      name: form.name.trim(),
-      category: form.category,
-      price,
-      compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null,
-      description: form.description.trim(),
-      status: form.status,
-      stock: Number(form.stock) || 0,
-      variants: form.variants
-        .filter((v) => v.label.trim())
-        .map((v) => ({ label: v.label.trim(), stock: Number(v.stock) || 0 })),
-      images: form.images.map((u) => u.trim()).filter(Boolean),
-    };
+    const input = formToInput(form);
 
-    if (editing) {
-      updateProduct(editing.id, input);
-      toast.success("Product updated", { description: input.name });
-    } else {
-      createProduct(input);
-      toast.success("Product created", { description: `${input.name} is live in the store` });
+    try {
+      if (editing) {
+        await updateProduct.mutateAsync({ id: editing.id, input });
+        toast.success("Product updated", { description: input.name });
+      } else {
+        await createProduct.mutateAsync(input);
+        toast.success("Product created", { description: `${input.name} is live in the store` });
+      }
+      setFormOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     }
-    setFormOpen(false);
   };
+
+  const saving = createProduct.isPending || updateProduct.isPending;
 
   return (
     <AdminShell
@@ -178,7 +231,7 @@ function ProductsPage() {
     >
       <Panel>
         <div className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-          <div className="relative min-w-[180px] flex-1">
+          <div className="relative min-w-45 flex-1">
             <Search
               size={15}
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -211,11 +264,9 @@ function ProductsPage() {
             className={`${inputCls} w-auto`}
           >
             <option value="all">All statuses</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
+            <option value="Active">Active</option>
+            <option value="Draft">Draft</option>
+            <option value="Out of Stock">Out of Stock</option>
           </select>
           <select
             value={sort}
@@ -241,8 +292,9 @@ function ProductsPage() {
             <button
               type="button"
               className={btnSubtle}
-              onClick={() => {
-                bulkStatus(selected, "Active");
+              onClick={async () => {
+                const targets = products.filter((p) => selected.includes(p.id));
+                await bulkSetActive.mutateAsync({ products: targets, isActive: true });
                 toast.success("Marked active");
               }}
             >
@@ -251,8 +303,9 @@ function ProductsPage() {
             <button
               type="button"
               className={btnSubtle}
-              onClick={() => {
-                bulkStatus(selected, "Draft");
+              onClick={async () => {
+                const targets = products.filter((p) => selected.includes(p.id));
+                await bulkSetActive.mutateAsync({ products: targets, isActive: false });
                 toast.success("Moved to draft");
               }}
             >
@@ -268,7 +321,7 @@ function ProductsPage() {
           </motion.div>
         )}
 
-        {!ready ? (
+        {isLoading ? (
           <TableSkeleton />
         ) : rows.length === 0 ? (
           <EmptyState
@@ -282,7 +335,7 @@ function ProductsPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-190 text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="w-10 px-4 py-3">
@@ -308,77 +361,80 @@ function ProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((p) => (
-                  <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/40">
-                    <td className="px-4 py-3">
-                      <input
-                        type="checkbox"
-                        aria-label={`Select ${p.name}`}
-                        checked={selected.includes(p.id)}
-                        onChange={(e) =>
-                          setSelected(
-                            e.target.checked
-                              ? [...selected, p.id]
-                              : selected.filter((id) => id !== p.id),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="px-2 py-3">
-                      <div className="flex items-center gap-3">
-                        {p.images[0] && (
-                          <img
-                            src={p.images[0]}
-                            alt=""
-                            className="h-10 w-10 shrink-0 rounded-sm object-cover"
-                          />
-                        )}
-                        <span className="font-medium tracking-tight">{p.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 text-muted-foreground">{p.category}</td>
-                    <td className="px-2 py-3 tabular-nums">{formatPrice(p.price)}</td>
-                    <td className="px-2 py-3 tabular-nums">
-                      <span className={p.stock <= lowStockThreshold ? "font-semibold text-primary" : ""}>
-                        {p.stock}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3">
-                      <StatusBadge status={p.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          aria-label={`Edit ${p.name}`}
-                          onClick={() => openEdit(p)}
-                          className={btnSubtle}
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Duplicate ${p.name}`}
-                          onClick={() => {
-                            duplicateProduct(p.id);
-                            toast.success("Duplicated as draft");
-                          }}
-                          className={btnSubtle}
-                        >
-                          <Copy size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Delete ${p.name}`}
-                          onClick={() => setConfirm([p.id])}
-                          className={`${btnSubtle} hover:text-primary`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {rows.map((p) => {
+                  const stock = totalStock(p);
+                  return (
+                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/40">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${p.name}`}
+                          checked={selected.includes(p.id)}
+                          onChange={(e) =>
+                            setSelected(
+                              e.target.checked
+                                ? [...selected, p.id]
+                                : selected.filter((id) => id !== p.id),
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="flex items-center gap-3">
+                          {p.images?.[0]?.url && (
+                            <img
+                              src={p.images[0].url}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-sm object-cover"
+                            />
+                          )}
+                          <span className="font-medium tracking-tight">{p.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-2 py-3 text-muted-foreground">{p.category}</td>
+                      <td className="px-2 py-3 tabular-nums">{formatPrice(p.basePrice)}</td>
+                      <td className="px-2 py-3 tabular-nums">
+                        <span className={stock > 0 && stock <= LOW_STOCK_THRESHOLD ? "font-semibold text-primary" : ""}>
+                          {stock}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3">
+                        <StatusBadge status={displayStatus(p)} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            aria-label={`Edit ${p.name}`}
+                            onClick={() => openEdit(p)}
+                            className={btnSubtle}
+                          >
+                            <Pencil size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Duplicate ${p.name}`}
+                            onClick={async () => {
+                              await duplicateProduct.mutateAsync(p);
+                              toast.success("Duplicated as draft");
+                            }}
+                            className={btnSubtle}
+                          >
+                            <Copy size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Delete ${p.name}`}
+                            onClick={() => setConfirm([p.id])}
+                            className={`${btnSubtle} hover:text-primary`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -420,14 +476,14 @@ function ProductsPage() {
             <button type="button" className={btnGhost} onClick={() => setFormOpen(false)}>
               Cancel
             </button>
-            <button type="button" className={btnPrimary} onClick={submit}>
-              {editing ? "Save changes" : "Create product"}
+            <button type="button" className={btnPrimary} onClick={submit} disabled={saving}>
+              {saving ? "Saving…" : editing ? "Save changes" : "Create product"}
             </button>
           </>
         }
       >
         <div className="space-y-4">
-          <Field label="Name" error={errors['name']}>
+          <Field label="Name" error={errors["name"]}>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -453,17 +509,14 @@ function ProductsPage() {
             <Field label="Status">
               <select
                 value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value as ProductStatus })}
+                onChange={(e) => setForm({ ...form, status: e.target.value as FormStatus })}
                 className={inputCls}
               >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
+                <option value="Active">Active</option>
+                <option value="Draft">Draft</option>
               </select>
             </Field>
-            <Field label="Price (USD)" error={errors['price']}>
+            <Field label="Price (USD)" error={errors["price"]}>
               <input
                 value={form.price}
                 onChange={(e) => setForm({ ...form, price: e.target.value })}
@@ -472,18 +525,9 @@ function ProductsPage() {
                 placeholder="128"
               />
             </Field>
-            <Field label="Compare-at price" error={errors['compareAtPrice']} hint="Optional">
-              <input
-                value={form.compareAtPrice}
-                onChange={(e) => setForm({ ...form, compareAtPrice: e.target.value })}
-                inputMode="decimal"
-                className={inputCls}
-                placeholder="160"
-              />
-            </Field>
           </div>
 
-          <Field label="Description" error={errors['description']}>
+          <Field label="Description" error={errors["description"]}>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -494,7 +538,7 @@ function ProductsPage() {
           </Field>
 
           {form.variants.length === 0 && (
-            <Field label="Stock" error={errors['stock']}>
+            <Field label="Stock" error={errors["stock"]}>
               <input
                 value={form.stock}
                 onChange={(e) => setForm({ ...form, stock: e.target.value })}
@@ -535,7 +579,7 @@ function ProductsPage() {
                       images[i] = e.target.value;
                       setForm({ ...form, images });
                     }}
-                    placeholder="https://… or /src/assets/hoodie.jpg"
+                    placeholder="https://… (Cloudinary URL)"
                     aria-label={`Image URL ${i + 1}`}
                     className={inputCls}
                   />
@@ -553,7 +597,6 @@ function ProductsPage() {
               ))}
             </div>
           </div>
-
 
           <div>
             <div className="flex items-center justify-between">
@@ -631,13 +674,17 @@ function ProductsPage() {
       <ConfirmDialog
         open={confirm !== null}
         title={confirm && confirm.length > 1 ? `Delete ${confirm.length} products?` : "Delete product?"}
-        body="This removes the item from the admin catalogue and the storefront. Mock data only — you can reset by clearing site data."
+        body="This permanently removes the item from the catalogue and the storefront. This cannot be undone."
         onCancel={() => setConfirm(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (confirm) {
-            deleteProducts(confirm);
-            setSelected([]);
-            toast.success(confirm.length > 1 ? `${confirm.length} products deleted` : "Product deleted");
+            try {
+              await deleteProducts.mutateAsync(confirm);
+              setSelected([]);
+              toast.success(confirm.length > 1 ? `${confirm.length} products deleted` : "Product deleted");
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Failed to delete");
+            }
           }
           setConfirm(null);
         }}

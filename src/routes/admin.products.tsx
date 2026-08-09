@@ -30,13 +30,13 @@ import {
 import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
 import type { Product } from "@/types/storefront";
 import type { CreateProductInput } from "@/types/admin";
+import { useStoreSettings } from "@/hooks/admin/useAdminSettings";
 
 export const Route = createFileRoute("/admin/products")({
   component: ProductsPage,
 });
 
 const PER_PAGE = 8;
-const LOW_STOCK_THRESHOLD = 5;
 
 type DisplayStatus = "Active" | "Draft" | "Out of Stock";
 type FormStatus = "Active" | "Draft";
@@ -63,9 +63,6 @@ const emptyForm = (category: string): FormState => ({
   images: [],
 });
 
-// A product only has "real" variants if at least one has a non-null
-// size/color/design — the silent single placeholder variant (all null)
-// created for stockless products doesn't count as a user-facing variant.
 function isPlaceholderVariant(v: Product["variants"][number]) {
   return !v.size && !v.color && !v.design;
 }
@@ -134,6 +131,8 @@ function formToInput(form: FormState): CreateProductInput {
 function ProductsPage() {
   const { data: products = [], isLoading } = useAdminProducts();
   const { data: categoryRows = [] } = useAdminCategories();
+  const { data: storeSettings } = useStoreSettings();
+  const lowStockThreshold = storeSettings?.lowStockThreshold ?? 5;
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const deleteProducts = useDeleteProducts();
@@ -358,7 +357,9 @@ function ProductsPage() {
                     />
                   </th>
                   <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">Product</th>
-                  <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">Category</th>
+                  <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">
+                    Category
+                  </th>
                   <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">Price</th>
                   <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">Stock</th>
                   <th className="px-2 py-3 text-xs font-semibold text-muted-foreground">Status</th>
@@ -369,7 +370,10 @@ function ProductsPage() {
                 {rows.map((p) => {
                   const stock = totalStock(p);
                   return (
-                    <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/40">
+                    <tr
+                      key={p.id}
+                      className="border-b border-border last:border-0 hover:bg-secondary/40"
+                    >
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
@@ -399,7 +403,13 @@ function ProductsPage() {
                       <td className="px-2 py-3 text-muted-foreground">{p.category}</td>
                       <td className="px-2 py-3 tabular-nums">{formatPrice(p.basePrice)}</td>
                       <td className="px-2 py-3 tabular-nums">
-                        <span className={stock > 0 && stock <= LOW_STOCK_THRESHOLD ? "font-semibold text-primary" : ""}>
+                        <span
+                          className={
+                            stock > 0 && stock <= lowStockThreshold
+                              ? "font-semibold text-primary"
+                              : ""
+                          }
+                        >
                           {stock}
                         </span>
                       </td>
@@ -448,7 +458,8 @@ function ProductsPage() {
         {rows.length > 0 && (
           <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-3">
             <p className="text-xs text-muted-foreground">
-              {filtered.length} product{filtered.length === 1 ? "" : "s"} · page {current} of {pages}
+              {filtered.length} product{filtered.length === 1 ? "" : "s"} · page {current} of{" "}
+              {pages}
             </p>
             <div className="flex gap-2">
               <button
@@ -669,7 +680,9 @@ function ProductsPage() {
                 <p className="truncate text-sm font-semibold tracking-tight">
                   {form.name || "Untitled product"}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">{form.category || "No category"}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {form.category || "No category"}
+                </p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-primary tabular-nums">
                 {formatPrice(Number(form.price) || 0)}
@@ -681,7 +694,9 @@ function ProductsPage() {
 
       <ConfirmDialog
         open={confirm !== null}
-        title={confirm && confirm.length > 1 ? `Delete ${confirm.length} products?` : "Delete product?"}
+        title={
+          confirm && confirm.length > 1 ? `Delete ${confirm.length} products?` : "Delete product?"
+        }
         body="This permanently removes the item from the catalogue and the storefront. This cannot be undone."
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
@@ -689,7 +704,9 @@ function ProductsPage() {
             try {
               await deleteProducts.mutateAsync(confirm);
               setSelected([]);
-              toast.success(confirm.length > 1 ? `${confirm.length} products deleted` : "Product deleted");
+              toast.success(
+                confirm.length > 1 ? `${confirm.length} products deleted` : "Product deleted",
+              );
             } catch (err) {
               toast.error(err instanceof Error ? err.message : "Failed to delete");
             }

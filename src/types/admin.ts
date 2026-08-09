@@ -150,6 +150,14 @@ export interface InsightsData {
   statusMix: StatusCount[]
 }
 
+export interface StoreSettings {
+  lowStockThreshold: number
+}
+
+export interface UpdateStoreSettingsInput {
+  lowStockThreshold: number
+}
+
 export type UpdateEventInput = CreateEventInput
 
 export type UpdateProductInput = CreateProductInput;

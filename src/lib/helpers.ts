@@ -1,6 +1,8 @@
 import type { Product, DBProductWithRelations } from '@/types/storefront'
 import type { Order, OrderHistoryEntry, OrderItem, AdminEvent, EventKind, EventStatus } from '@/types/admin'
 import type { Database } from '@/types/database.types'
+import type { StoreSettings } from '@/types/admin'
+
 
 type DBEventRow = Database['public']['Tables']['events']['Row']
 
@@ -100,5 +102,14 @@ export function transformOrder(
     items: itemRows,
     history: historyRows,
     createdAt: dbOrder.created_at,
+  }
+}
+
+
+type DBStoreSettingsRow = Database['public']['Tables']['store_settings']['Row']
+
+export function transformStoreSettings(row: DBStoreSettingsRow): StoreSettings {
+  return {
+    lowStockThreshold: row.low_stock_threshold,
   }
 }

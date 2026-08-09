@@ -24,13 +24,19 @@ import {
   btnPrimary,
 } from "@/components/admin/parts";
 import { formatPrice } from "@/data/products";
-import { makeSalesSeries, useData } from "@/lib/data-store";
 import { useAdminProducts } from "@/hooks/admin/useAdminProducts";
+import { useAdminOrders, STATUS_LABEL } from "@/hooks/admin/useAdminOrders";
+import { useAdminEvents } from "@/hooks/admin/useAdminEvents";
+import { useAdminCategories } from "@/hooks/admin/useAdminCategories";
+import { useStoreSettings } from "@/hooks/admin/useAdminSettings";
+import { useAdminInsights } from "@/hooks/admin/useAdminInsights";
 import type { Product } from "@/types/storefront";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
 });
+
+const CLOSED_STATUSES = new Set(["cancelled", "refunded"]);
 
 function Kpi({
   label,
@@ -66,17 +72,22 @@ function totalStock(product: Product): number {
 }
 
 function Dashboard() {
-  // Real data
   const { data: products = [], isLoading: productsLoading, isError: productsError } =
     useAdminProducts();
-
-  // Still mock — no admin API for orders/events/categories yet
-  const { orders, events, categories, lowStockThreshold } = useData();
+  const { data: orders = [], isLoading: ordersLoading, isError: ordersError } = useAdminOrders();
+  const { data: events = [], isLoading: eventsLoading } = useAdminEvents();
+  const { data: categoryRows = [], isLoading: categoriesLoading } = useAdminCategories();
+  const { data: storeSettings } = useStoreSettings();
+  const lowStockThreshold = storeSettings?.lowStockThreshold ?? 5;
 
   const [range, setRange] = useState<7 | 30>(7);
-  const series = useMemo(() => makeSalesSeries(range), [range]);
+  const { data: insights, isLoading: insightsLoading } = useAdminInsights(range);
+  const series = insights?.series ?? [];
 
-  const paid = orders.filter((o) => o.status !== "Cancelled" && o.status !== "Refunded");
+  const paid = useMemo(
+    () => orders.filter((o) => !CLOSED_STATUSES.has(o.status)),
+    [orders],
+  );
   const revenue = paid.reduce((s, o) => s + o.total, 0);
   const aov = paid.length ? revenue / paid.length : 0;
 
@@ -86,25 +97,37 @@ function Dashboard() {
   );
   const upcoming = events.filter((e) => e.status === "Upcoming").length;
 
+  // Order items only carry variantId/productName, not category — so category
+  // revenue is derived by matching each item's variantId back to the product
+  // that owns that variant, via the currently-loaded product list.
+  const variantToProduct = useMemo(() => {
+    const map = new Map<string, Product>();
+    for (const p of products) {
+      for (const v of p.variants ?? []) map.set(v.id, p);
+    }
+    return map;
+  }, [products]);
+
   const byCategory = useMemo(() => {
     const map = new Map<string, number>();
     for (const o of paid) {
       for (const it of o.items) {
-        // NOTE: order items still reference mock product IDs — this will
-        // mismatch against real product IDs until orders are wired up too.
-        const product = products.find((p) => p.id === it.productId);
-        const key = product?.category ?? "Other";
-        map.set(key, (map.get(key) ?? 0) + it.price * it.qty);
+        const category = variantToProduct.get(it.variantId)?.category ?? "Other";
+        map.set(category, (map.get(category) ?? 0) + it.priceAtOrder * it.quantity);
       }
     }
     return Array.from(map, ([name, revenue]) => ({ name, revenue })).sort(
       (a, b) => b.revenue - a.revenue,
     );
-  }, [paid, products]);
+  }, [paid, variantToProduct]);
 
-  const recent = [...orders]
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-    .slice(0, 6);
+  const recent = useMemo(
+    () =>
+      [...orders]
+        .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+        .slice(0, 6),
+    [orders],
+  );
 
   const avgPrice = products.length
     ? products.reduce((s, p) => s + p.basePrice, 0) / products.length
@@ -119,9 +142,11 @@ function Dashboard() {
     { label: "Active", value: String(activeCount) },
     { label: "Drafts", value: String(draftCount) },
     { label: "Out of stock", value: String(outOfStockCount) },
-    { label: "Categories", value: String(categories.length) },
+    { label: "Categories", value: categoriesLoading ? "—" : String(categoryRows.length) },
     { label: "Avg. price", value: formatPrice(avgPrice) },
   ];
+
+  const hasError = productsError || ordersError;
 
   return (
     <AdminShell
@@ -138,20 +163,35 @@ function Dashboard() {
         </>
       }
     >
-      {productsError && (
+      {hasError && (
         <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          Couldn't load product data. Catalogue stats below may be incomplete.
+          Couldn't load some dashboard data. Numbers below may be incomplete.
         </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label="Total revenue" value={formatPrice(revenue)} delta="12.4% vs prev." index={0} />
-        <Kpi label="Orders" value={String(orders.length)} delta="8 new this week" index={1} />
-        <Kpi label="Avg. order value" value={formatPrice(aov)} delta="3.1% vs prev." index={2} />
+        <Kpi
+          label="Total revenue"
+          value={ordersLoading ? "—" : formatPrice(revenue)}
+          delta={`${paid.length} paid orders`}
+          index={0}
+        />
+        <Kpi
+          label="Orders"
+          value={ordersLoading ? "—" : String(orders.length)}
+          delta={`${orders.length - paid.length} cancelled/refunded`}
+          index={1}
+        />
+        <Kpi
+          label="Avg. order value"
+          value={ordersLoading ? "—" : formatPrice(aov)}
+          delta="Across paid orders"
+          index={2}
+        />
         <Kpi
           label="Active products"
           value={productsLoading ? "—" : String(activeCount)}
-          delta={`${upcoming} upcoming events`}
+          delta={eventsLoading ? "—" : `${upcoming} upcoming events`}
           index={3}
         />
       </div>
@@ -180,73 +220,83 @@ function Dashboard() {
             }
           />
           <div className="h-64 px-2 py-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={series}>
-                <defs>
-                  <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--color-border)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  interval="preserveStartEnd"
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={48}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 4,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => formatPrice(v)}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="var(--color-primary)"
-                  strokeWidth={2}
-                  fill="url(#rev)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {insightsLoading ? (
+              <div className="h-full w-full animate-pulse rounded-sm bg-secondary/50" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={series}>
+                  <defs>
+                    <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    interval="preserveStartEnd"
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={48}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 4,
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => formatPrice(v)}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="var(--color-primary)"
+                    strokeWidth={2}
+                    fill="url(#rev)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Panel>
 
         <Panel>
           <PanelHead title="Revenue by category" />
           <div className="h-64 px-2 py-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={byCategory}>
-                <CartesianGrid stroke="var(--color-border)" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 4,
-                    fontSize: 12,
-                  }}
-                  formatter={(v: number) => formatPrice(v)}
-                />
-                <Bar dataKey="revenue" fill="var(--color-primary)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {ordersLoading || productsLoading ? (
+              <div className="h-full w-full animate-pulse rounded-sm bg-secondary/50" />
+            ) : byCategory.length === 0 ? (
+              <EmptyState title="No sales yet" body="Category revenue appears once orders come in." />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={byCategory}>
+                  <CartesianGrid stroke="var(--color-border)" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 4,
+                      fontSize: 12,
+                    }}
+                    formatter={(v: number) => formatPrice(v)}
+                  />
+                  <Bar dataKey="revenue" fill="var(--color-primary)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </Panel>
       </div>
@@ -261,8 +311,10 @@ function Dashboard() {
               </Link>
             }
           />
-          {recent.length === 0 ? (
-            <EmptyState title="No orders yet" body="Mock orders placed at checkout appear here." />
+          {ordersLoading ? (
+            <EmptyState title="Loading…" body="Fetching recent orders." />
+          ) : recent.length === 0 ? (
+            <EmptyState title="No orders yet" body="Orders placed at checkout appear here." />
           ) : (
             <div className="divide-y divide-border">
               {recent.map((o) => (
@@ -279,10 +331,10 @@ function Dashboard() {
                     {formatPrice(o.total)}
                   </span>
                   <span className="text-xs font-semibold tabular-nums text-muted-foreground sm:order-1 sm:w-20 sm:shrink-0 sm:text-foreground">
-                    {o.id}
+                    {o.id.slice(0, 8)}
                   </span>
                   <span className="justify-self-end sm:order-3">
-                    <StatusBadge status={o.status} />
+                    <StatusBadge status={STATUS_LABEL[o.status]} />
                   </span>
                 </Link>
               ))}

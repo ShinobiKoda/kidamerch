@@ -140,9 +140,9 @@ const ApiAdminCategoriesIndexRoute = ApiAdminCategoriesIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminCategoriesIdRoute = ApiAdminCategoriesIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiAdminCategoriesRoute,
+  id: '/api/admin/categories/$id',
+  path: '/api/admin/categories/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminEventsIndexRoute = ApiAdminEventsIndexRouteImport.update({
   id: '/api/admin/events/',
@@ -384,6 +384,7 @@ export interface RootRouteChildren {
   WishlistRoute: typeof WishlistRoute
   ProductIdRoute: typeof ProductIdRoute
   ApiAdminSettingsRoute: typeof ApiAdminSettingsRoute
+  ApiAdminCategoriesIdRoute: typeof ApiAdminCategoriesIdRoute
   ApiAdminEventsIdRoute: typeof ApiAdminEventsIdRoute
   ApiAdminInventoryAdjustmentsRoute: typeof ApiAdminInventoryAdjustmentsRoute
   ApiAdminOrdersIdRoute: typeof ApiAdminOrdersIdRoute
@@ -539,10 +540,10 @@ declare module '@tanstack/react-router' {
     }
     '/api/admin/categories/$id': {
       id: '/api/admin/categories/$id'
-      path: '/$id'
+      path: '/api/admin/categories/$id'
       fullPath: '/api/admin/categories/$id'
       preLoaderRoute: typeof ApiAdminCategoriesIdRouteImport
-      parentRoute: typeof ApiAdminCategoriesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin/events/': {
       id: '/api/admin/events/'
@@ -641,6 +642,7 @@ const rootRouteChildren: RootRouteChildren = {
   WishlistRoute: WishlistRoute,
   ProductIdRoute: ProductIdRoute,
   ApiAdminSettingsRoute: ApiAdminSettingsRoute,
+  ApiAdminCategoriesIdRoute: ApiAdminCategoriesIdRoute,
   ApiAdminEventsIdRoute: ApiAdminEventsIdRoute,
   ApiAdminInventoryAdjustmentsRoute: ApiAdminInventoryAdjustmentsRoute,
   ApiAdminOrdersIdRoute: ApiAdminOrdersIdRoute,

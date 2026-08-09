@@ -4,7 +4,8 @@ import type { Product } from '@/types/storefront'
 
 export const productKeys = {
   all: ['products'] as const,
-  storefront: (params?: GetProductsParams) => [...productKeys.all, 'storefront', params] as const,
+  // Normalizing params ensures clean cache keys even when undefined is passed
+  storefront: (params?: GetProductsParams) => [...productKeys.all, 'storefront', params ?? {}] as const,
   detail: (id: string) => [...productKeys.all, 'detail', id] as const,
 }
 
@@ -12,7 +13,7 @@ export function useProducts(params?: GetProductsParams) {
   return useQuery<Product[], Error>({
     queryKey: productKeys.storefront(params),
     queryFn: () => productsApi.getStorefrontProducts(params),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   })
 }
 
@@ -20,6 +21,7 @@ export function useProduct(id: string) {
   return useQuery<Product, Error>({
     queryKey: productKeys.detail(id),
     queryFn: () => productsApi.getProductById(id),
+    enabled: Boolean(id), // Prevents fetching when id is undefined/empty
     staleTime: 1000 * 60 * 5,
   })
 }

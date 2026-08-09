@@ -13,7 +13,7 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   shipped: "delivered",
 };
 
-const STATUS_LABEL: Record<OrderStatus, string> = {
+export const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "Pending",
   processing: "Processing",
   shipped: "Shipped",

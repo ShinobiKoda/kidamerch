@@ -1,6 +1,24 @@
 import type { Product, DBProductWithRelations } from '@/types/storefront'
-import type { Order, OrderHistoryEntry, OrderItem } from '@/types/admin'
+import type { Order, OrderHistoryEntry, OrderItem, AdminEvent, EventKind, EventStatus } from '@/types/admin'
+import type { Database } from '@/types/database.types'
 
+type DBEventRow = Database['public']['Tables']['events']['Row']
+
+export function transformEvent(dbEvent: DBEventRow): AdminEvent {
+  return {
+    id: dbEvent.id,
+    name: dbEvent.name,
+    kind: dbEvent.kind as EventKind,
+    date: dbEvent.date,
+    location: dbEvent.location,
+    description: dbEvent.description ?? '',
+    cover: dbEvent.cover ?? '',
+    gallery: dbEvent.gallery ?? [],
+    status: dbEvent.status as EventStatus,
+    featured: dbEvent.featured,
+    createdAt: dbEvent.created_at,
+  }
+}
 
 export function transformProduct(dbProduct: DBProductWithRelations): Product {
   return {

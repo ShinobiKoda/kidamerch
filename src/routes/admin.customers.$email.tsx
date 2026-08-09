@@ -9,15 +9,30 @@ import {
   btnPrimary,
 } from "@/components/admin/parts";
 import { formatPrice } from "@/data/products";
-import { useCustomers } from "@/lib/data-store";
+import { useAdminCustomers } from "@/hooks/admin/useAdminCustomers";
 
 export const Route = createFileRoute("/admin/customers/$email")({
   component: CustomerDetail,
 });
 
+function statusLabel(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function CustomerDetail() {
   const { email } = useParams({ from: "/admin/customers/$email" });
-  const customer = useCustomers().find((c) => c.email === email);
+  const { customers, isLoading } = useAdminCustomers();
+  const customer = customers.find((c) => c.email === email);
+
+  if (isLoading) {
+    return (
+      <AdminShell title="Loading…">
+        <Panel>
+          <EmptyState title="Loading…" body="Fetching customer details." />
+        </Panel>
+      </AdminShell>
+    );
+  }
 
   if (!customer) {
     return (
@@ -25,7 +40,7 @@ function CustomerDetail() {
         <Panel>
           <EmptyState
             title="No record for this customer"
-            body="They may have no orders in the mock dataset."
+            body="They may have no orders yet."
             action={
               <Link to="/admin/customers" className={btnPrimary}>
                 Back to customers
@@ -38,7 +53,8 @@ function CustomerDetail() {
   }
 
   const orders = [...customer.orders].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  const aov = customer.orders.length ? customer.spent / customer.orders.length : 0;
+  const paidOrders = customer.orders.filter((o) => o.paymentStatus === "paid");
+  const aov = paidOrders.length ? customer.spent / paidOrders.length : 0;
 
   return (
     <AdminShell title={customer.name}>
@@ -66,7 +82,8 @@ function CustomerDetail() {
         <PanelHead title="Contact" />
         <div className="px-4 py-4 text-sm">
           <p className="text-muted-foreground">{customer.email}</p>
-          <p className="mt-1">{orders[0]?.address}</p>
+          {orders[0]?.customerPhone && <p className="mt-1">{orders[0].customerPhone}</p>}
+          <p className="mt-1">{orders[0]?.shippingAddress ?? "No address on file"}</p>
         </div>
       </Panel>
 
@@ -80,7 +97,9 @@ function CustomerDetail() {
                 params={{ id: o.id }}
                 className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-secondary/50"
               >
-                <span className="w-20 shrink-0 text-xs font-semibold tabular-nums">{o.id}</span>
+                <span className="w-20 shrink-0 text-xs font-semibold tabular-nums">
+                  {o.id.slice(0, 8)}
+                </span>
                 <span className="flex-1 text-sm text-muted-foreground">
                   {new Date(o.createdAt).toLocaleDateString("en-US", {
                     month: "short",
@@ -88,7 +107,7 @@ function CustomerDetail() {
                     year: "numeric",
                   })}
                 </span>
-                <StatusBadge status={o.status} />
+                <StatusBadge status={statusLabel(o.status)} />
                 <span className="w-24 shrink-0 text-right text-sm font-semibold tabular-nums">
                   {formatPrice(o.total)}
                 </span>

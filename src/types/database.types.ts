@@ -32,6 +32,48 @@ export type Database = {
         }
         Relationships: []
       }
+      events: {
+        Row: {
+          cover: string | null
+          created_at: string
+          date: string
+          description: string | null
+          featured: boolean
+          gallery: string[]
+          id: string
+          kind: string
+          location: string
+          name: string
+          status: string
+        }
+        Insert: {
+          cover?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          featured?: boolean
+          gallery?: string[]
+          id?: string
+          kind: string
+          location: string
+          name: string
+          status?: string
+        }
+        Update: {
+          cover?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          featured?: boolean
+          gallery?: string[]
+          id?: string
+          kind?: string
+          location?: string
+          name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       order_history: {
         Row: {
           at: string
@@ -336,6 +378,59 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      stock_adjustments: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          product_name: string
+          reason: string
+          variant_id: string
+          variant_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          product_name: string
+          reason: string
+          variant_id: string
+          variant_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          product_name?: string
+          reason?: string
+          variant_id?: string
+          variant_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_adjustments_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_settings: {
+        Row: {
+          id: boolean
+          low_stock_threshold: number
+        }
+        Insert: {
+          id?: boolean
+          low_stock_threshold?: number
+        }
+        Update: {
+          id?: boolean
+          low_stock_threshold?: number
+        }
+        Relationships: []
       }
     }
     Views: {

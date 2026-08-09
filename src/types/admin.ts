@@ -8,6 +8,10 @@ export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 export type AdjustmentReason = "restock" | "damaged" | "correction";
 
+export type EventKind = "Convention" | "Meetup" | "Signing" | "Pop-up"
+export type EventStatus = "Upcoming" | "Past" | "Cancelled"
+
+
 export interface CreateVariantInput {
   size?: string | null;
   color?: string | null;
@@ -96,5 +100,33 @@ export interface AdjustStockInput {
   delta: number;
   reason: AdjustmentReason;
 }
+
+export interface AdminEvent {
+  id: string
+  name: string
+  kind: EventKind
+  date: string
+  location: string
+  description: string
+  cover: string
+  gallery: string[]
+  status: EventStatus
+  featured: boolean
+  createdAt: string
+}
+
+export interface CreateEventInput {
+  name: string
+  kind: EventKind
+  date: string
+  location: string
+  description: string
+  cover?: string | null
+  gallery?: string[]
+  status: EventStatus
+  featured?: boolean
+}
+
+export type UpdateEventInput = CreateEventInput
 
 export type UpdateProductInput = CreateProductInput;

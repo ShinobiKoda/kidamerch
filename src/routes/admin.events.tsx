@@ -10,24 +10,32 @@ import {
   Panel,
   SlideOver,
   StatusBadge,
+  TableSkeleton,
   btnGhost,
   btnPrimary,
   btnSubtle,
   inputCls,
 } from "@/components/admin/parts";
-import { formatEventDate, type Event } from "@/data/events";
-import { useData, type AdminEvent, type EventInput, type EventStatus } from "@/lib/data-store";
+import { formatEventDate } from "@/data/events";
+import {
+  useAdminEvents,
+  useCreateEvent,
+  useUpdateEvent,
+  useDeleteEvent,
+  useToggleFeatured,
+} from "@/hooks/admin/useAdminEvents";
+import type { AdminEvent, EventKind, EventStatus, CreateEventInput } from "@/types/admin";
 
 export const Route = createFileRoute("/admin/events")({
   component: EventsPage,
 });
 
-const KINDS: Event["kind"][] = ["Convention", "Meetup", "Signing", "Pop-up"];
+const KINDS: EventKind[] = ["Convention", "Meetup", "Signing", "Pop-up"];
 const STATUSES: EventStatus[] = ["Upcoming", "Past", "Cancelled"];
 
 type FormState = {
   name: string;
-  kind: Event["kind"];
+  kind: EventKind;
   date: string;
   location: string;
   description: string;
@@ -46,7 +54,12 @@ const empty: FormState = {
 };
 
 function EventsPage() {
-  const { events, createEvent, updateEvent, deleteEvent, toggleFeatured } = useData();
+  const { data: events = [], isLoading } = useAdminEvents();
+  const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
+  const deleteEvent = useDeleteEvent();
+  const { toggle: toggleFeatured, isPending: togglingFeatured } = useToggleFeatured();
+
   const [filter, setFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AdminEvent | null>(null);
@@ -84,37 +97,42 @@ function EventsPage() {
     setOpen(true);
   };
 
-  const submit = () => {
+  const submit = async () => {
     const next: Record<string, string> = {};
-    if (!form.name.trim()) next['name'] = "Name is required.";
-    if (!form.date) next['date'] = "Pick a date.";
-    if (!form.location.trim()) next['location'] = "Location is required.";
-    if (form.description.trim().length < 10) next['description'] = "Add at least 10 characters.";
+    if (!form.name.trim()) next["name"] = "Name is required.";
+    if (!form.date) next["date"] = "Pick a date.";
+    if (!form.location.trim()) next["location"] = "Location is required.";
+    if (form.description.trim().length < 10) next["description"] = "Add at least 10 characters.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
-    const base = editing ?? events[0];
-    const input: EventInput = {
+    const input: CreateEventInput = {
       name: form.name.trim(),
       kind: form.kind,
       date: form.date,
       location: form.location.trim(),
       description: form.description.trim(),
-      cover: editing?.cover ?? base?.cover ?? "",
-      gallery: editing?.gallery ?? base?.gallery ?? [],
+      cover: editing?.cover ?? "",
+      gallery: editing?.gallery ?? [],
       status: form.status,
       featured: form.featured,
     };
 
-    if (editing) {
-      updateEvent(editing.id, input);
-      toast.success("Event updated", { description: input.name });
-    } else {
-      createEvent(input);
-      toast.success("Event created", { description: "Now visible on the storefront" });
+    try {
+      if (editing) {
+        await updateEvent.mutateAsync({ id: editing.id, input });
+        toast.success("Event updated", { description: input.name });
+      } else {
+        await createEvent.mutateAsync(input);
+        toast.success("Event created", { description: "Now visible on the storefront" });
+      }
+      setOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
     }
-    setOpen(false);
   };
+
+  const saving = createEvent.isPending || updateEvent.isPending;
 
   return (
     <AdminShell
@@ -141,7 +159,11 @@ function EventsPage() {
         ))}
       </div>
 
-      {rows.length === 0 ? (
+      {isLoading ? (
+        <Panel>
+          <TableSkeleton />
+        </Panel>
+      ) : rows.length === 0 ? (
         <Panel>
           <EmptyState
             title="No events"
@@ -161,7 +183,7 @@ function EventsPage() {
               className="overflow-hidden rounded-md border border-border bg-surface shadow-elevate"
             >
               {e.cover && (
-                <img src={e.cover} alt="" className="aspect-[16/9] w-full object-cover" />
+                <img src={e.cover} alt="" className="aspect-video w-full object-cover" />
               )}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -178,8 +200,9 @@ function EventsPage() {
                   <button
                     type="button"
                     className={btnSubtle}
-                    onClick={() => {
-                      const ok = toggleFeatured(e.id);
+                    disabled={togglingFeatured}
+                    onClick={async () => {
+                      const ok = await toggleFeatured(e, events);
                       if (!ok) toast.error("Only three events can be featured at once");
                     }}
                   >
@@ -212,14 +235,14 @@ function EventsPage() {
             <button type="button" className={btnGhost} onClick={() => setOpen(false)}>
               Cancel
             </button>
-            <button type="button" className={btnPrimary} onClick={submit}>
-              {editing ? "Save changes" : "Create event"}
+            <button type="button" className={btnPrimary} onClick={submit} disabled={saving}>
+              {saving ? "Saving…" : editing ? "Save changes" : "Create event"}
             </button>
           </>
         }
       >
         <div className="space-y-4">
-          <Field label="Event name" error={errors['name']}>
+          <Field label="Event name" error={errors["name"]}>
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -231,7 +254,7 @@ function EventsPage() {
             <Field label="Type">
               <select
                 value={form.kind}
-                onChange={(e) => setForm({ ...form, kind: e.target.value as Event["kind"] })}
+                onChange={(e) => setForm({ ...form, kind: e.target.value as EventKind })}
                 className={inputCls}
               >
                 {KINDS.map((k) => (
@@ -254,7 +277,7 @@ function EventsPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Date" error={errors['date']}>
+            <Field label="Date" error={errors["date"]}>
               <input
                 type="date"
                 value={form.date}
@@ -262,7 +285,7 @@ function EventsPage() {
                 className={inputCls}
               />
             </Field>
-            <Field label="Location" error={errors['location']}>
+            <Field label="Location" error={errors["location"]}>
               <input
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -271,7 +294,7 @@ function EventsPage() {
               />
             </Field>
           </div>
-          <Field label="Description" error={errors['description']}>
+          <Field label="Description" error={errors["description"]}>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -295,10 +318,14 @@ function EventsPage() {
         title="Delete event?"
         body="It will be removed from the admin list and the storefront events page."
         onCancel={() => setConfirm(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (confirm) {
-            deleteEvent(confirm.id);
-            toast.success("Event deleted");
+            try {
+              await deleteEvent.mutateAsync(confirm.id);
+              toast.success("Event deleted");
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : "Failed to delete");
+            }
           }
           setConfirm(null);
         }}

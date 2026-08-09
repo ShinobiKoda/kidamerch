@@ -2,16 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { EmptyState, Panel, inputCls } from "@/components/admin/parts";
+import { EmptyState, Panel, TableSkeleton, inputCls } from "@/components/admin/parts";
 import { formatPrice } from "@/data/products";
-import { useCustomers } from "@/lib/data-store";
+import { useAdminCustomers } from "@/hooks/admin/useAdminCustomers";
 
 export const Route = createFileRoute("/admin/customers/")({
   component: CustomersPage,
 });
 
 function CustomersPage() {
-  const customers = useCustomers();
+  const { customers, isLoading } = useAdminCustomers();
   const [query, setQuery] = useState("");
 
   const rows = useMemo(() => {
@@ -24,7 +24,7 @@ function CustomersPage() {
   return (
     <AdminShell
       title="Customers"
-      description="Derived from the mock order history — spend, order count and last activity per person."
+      description="Derived from order history — spend, order count and last activity per person."
     >
       <Panel>
         <div className="border-b border-border p-3">
@@ -42,11 +42,13 @@ function CustomersPage() {
           </div>
         </div>
 
-        {rows.length === 0 ? (
-          <EmptyState title="No customers yet" body="Mock orders create customer records." />
+        {isLoading ? (
+          <TableSkeleton />
+        ) : rows.length === 0 ? (
+          <EmptyState title="No customers yet" body="Orders create customer records once placed." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-160 text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
                   {["Customer", "Orders", "Total spent", "Last order"].map((h) => (

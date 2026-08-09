@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Heart } from "lucide-react";
-import { formatPrice, getProduct } from "@/data/products";
+import { formatPrice } from "@/data/products";
 import { useStore } from "@/lib/store";
+import { useProducts } from "@/hooks/useProducts";
 import { EASE } from "@/components/Reveal";
 
 export const Route = createFileRoute("/wishlist")({
@@ -23,7 +24,11 @@ export const Route = createFileRoute("/wishlist")({
 
 function WishlistPage() {
   const { wishlist, toggleWishlist, addToCart } = useStore();
-  const items = wishlist.map(getProduct).filter(Boolean);
+  const { data: allProducts = [], isLoading } = useProducts();
+
+  const items = wishlist
+    .map((id) => allProducts.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   return (
     <div className="mx-auto max-w-7xl px-5 pt-10 sm:px-8">
@@ -35,7 +40,9 @@ function WishlistPage() {
         </p>
       </header>
 
-      {items.length === 0 ? (
+      {isLoading ? (
+        <div className="py-24 text-center text-sm text-muted-foreground">Loading your saved pieces…</div>
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-sm border border-dashed border-border py-24 text-center">
           <span className="grid h-16 w-16 place-items-center rounded-full border border-border">
             <Heart size={22} className="text-primary" />
@@ -56,45 +63,45 @@ function WishlistPage() {
           <AnimatePresence initial={false}>
             {items.map((p) => (
               <motion.article
-                key={p!.id}
+                key={p.id}
                 layout
                 exit={{ opacity: 0, height: 0, marginBottom: 0 }}
                 transition={{ duration: 0.32, ease: EASE }}
                 className="overflow-hidden rounded-sm border border-border bg-card"
               >
-                <Link to="/product/$id" params={{ id: p!.id }} className="block">
-                  <div className="aspect-[16/10] overflow-hidden">
+                <Link to="/product/$id" params={{ id: p.id }} className="block">
+                  <div className="aspect-16/10 overflow-hidden">
                     <img
-                      src={p!.images[0]}
-                      alt={p!.name}
+                      src={p.images[0]?.url}
+                      alt={p.name}
                       loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105"
+                      className="h-full w-full object-cover transition-transform duration-500 ease-drop hover:scale-105"
                     />
                   </div>
                 </Link>
                 <div className="p-5">
-                  <p className="eyebrow text-[10px] text-muted-foreground">{p!.category}</p>
+                  <p className="eyebrow text-[10px] text-muted-foreground">{p.category}</p>
                   <div className="mt-2 flex items-start justify-between gap-3">
-                    <h2 className="min-w-0 truncate text-base font-semibold">{p!.name}</h2>
+                    <h2 className="min-w-0 truncate text-base font-semibold">{p.name}</h2>
                     <p className="shrink-0 font-semibold text-primary tabular-nums">
-                      {formatPrice(p!.price)}
+                      {formatPrice(p.basePrice)}
                     </p>
                   </div>
                   <div className="mt-5 flex gap-2">
                     <button
                       type="button"
-                      disabled={!p!.inStock}
+                      disabled={!p.isActive}
                       onClick={() => {
-                        addToCart(p!, p!.variants[0] ?? null);
-                        toggleWishlist(p!);
+                        addToCart(p, p.variants?.[0] ?? null);
+                        toggleWishlist(p);
                       }}
                       className="eyebrow h-12 flex-1 rounded-sm bg-primary text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:bg-secondary disabled:text-muted-foreground"
                     >
-                      {p!.inStock ? "Move to cart" : "Sold out"}
+                      {p.isActive ? "Move to cart" : "Sold out"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => toggleWishlist(p!)}
+                      onClick={() => toggleWishlist(p)}
                       className="eyebrow h-12 rounded-sm border border-border px-4 text-muted-foreground transition-colors duration-200 hover:text-primary"
                     >
                       Remove

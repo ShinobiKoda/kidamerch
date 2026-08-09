@@ -24,7 +24,7 @@ export function WishlistButton({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        // toggleWishlist(product);
+        toggleWishlist(product);
       }}
       className={`grid h-11 w-11 place-items-center rounded-full border border-border bg-background/85 backdrop-blur-sm transition-colors duration-200 hover:border-primary ${className}`}
     >

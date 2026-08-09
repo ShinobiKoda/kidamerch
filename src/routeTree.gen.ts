@@ -32,6 +32,7 @@ import { Route as ApiAdminCategoriesIndexRouteImport } from './routes/api/admin/
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 import { Route as ApiAdminEventsIndexRouteImport } from './routes/api/admin/events/index'
 import { Route as ApiAdminEventsIdRouteImport } from './routes/api/admin/events/$id'
+import { Route as ApiAdminInsightsIndexRouteImport } from './routes/api/admin/insights/index'
 import { Route as ApiAdminInventoryAdjustmentsRouteImport } from './routes/api/admin/inventory/adjustments'
 import { Route as ApiAdminOrdersIndexRouteImport } from './routes/api/admin/orders/index'
 import { Route as ApiAdminOrdersIdRouteImport } from './routes/api/admin/orders/$id'
@@ -153,6 +154,11 @@ const ApiAdminEventsIdRoute = ApiAdminEventsIdRouteImport.update({
   path: '/api/admin/events/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminInsightsIndexRoute = ApiAdminInsightsIndexRouteImport.update({
+  id: '/api/admin/insights/',
+  path: '/api/admin/insights/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminInventoryAdjustmentsRoute =
   ApiAdminInventoryAdjustmentsRouteImport.update({
     id: '/api/admin/inventory/adjustments',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
+  '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
@@ -236,6 +243,7 @@ export interface FileRoutesByTo {
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events': typeof ApiAdminEventsIndexRoute
+  '/api/admin/insights': typeof ApiAdminInsightsIndexRoute
   '/api/admin/orders': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products': typeof ApiAdminProductsIndexRoute
 }
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/api/admin/products/$id': typeof ApiAdminProductsIdRoute
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
+  '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/api/admin/products/$id'
     | '/api/admin/categories/'
     | '/api/admin/events/'
+    | '/api/admin/insights/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/api/admin/products/$id'
     | '/api/admin/categories'
     | '/api/admin/events'
+    | '/api/admin/insights'
     | '/api/admin/orders'
     | '/api/admin/products'
   id:
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/api/admin/products/$id'
     | '/api/admin/categories/'
     | '/api/admin/events/'
+    | '/api/admin/insights/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesById: FileRoutesById
@@ -378,6 +390,7 @@ export interface RootRouteChildren {
   ApiAdminProductsIdRoute: typeof ApiAdminProductsIdRoute
   ApiAdminCategoriesIndexRoute: typeof ApiAdminCategoriesIndexRoute
   ApiAdminEventsIndexRoute: typeof ApiAdminEventsIndexRoute
+  ApiAdminInsightsIndexRoute: typeof ApiAdminInsightsIndexRoute
   ApiAdminOrdersIndexRoute: typeof ApiAdminOrdersIndexRoute
   ApiAdminProductsIndexRoute: typeof ApiAdminProductsIndexRoute
 }
@@ -545,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminEventsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/insights/': {
+      id: '/api/admin/insights/'
+      path: '/api/admin/insights'
+      fullPath: '/api/admin/insights/'
+      preLoaderRoute: typeof ApiAdminInsightsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/inventory/adjustments': {
       id: '/api/admin/inventory/adjustments'
       path: '/api/admin/inventory/adjustments'
@@ -627,6 +647,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminProductsIdRoute: ApiAdminProductsIdRoute,
   ApiAdminCategoriesIndexRoute: ApiAdminCategoriesIndexRoute,
   ApiAdminEventsIndexRoute: ApiAdminEventsIndexRoute,
+  ApiAdminInsightsIndexRoute: ApiAdminInsightsIndexRoute,
   ApiAdminOrdersIndexRoute: ApiAdminOrdersIndexRoute,
   ApiAdminProductsIndexRoute: ApiAdminProductsIndexRoute,
 }

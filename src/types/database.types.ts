@@ -437,7 +437,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_revenue_series: {
+        Args: { days_back: number }
+        Returns: {
+          day: string
+          revenue: number
+        }[]
+      }
+      admin_status_mix: {
+        Args: never
+        Returns: {
+          count: number
+          status: string
+        }[]
+      }
+      admin_top_products: {
+        Args: { limit_count?: number }
+        Returns: {
+          product_name: string
+          revenue: number
+          units: number
+        }[]
+      }
     }
     Enums: {
       admin_role: "admin" | "superadmin"

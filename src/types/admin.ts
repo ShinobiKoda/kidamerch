@@ -127,6 +127,29 @@ export interface CreateEventInput {
   featured?: boolean
 }
 
+export interface RevenuePoint {
+  date: string
+  label: string
+  revenue: number
+}
+
+export interface TopProduct {
+  name: string
+  units: number
+  revenue: number
+}
+
+export interface StatusCount {
+  name: string
+  count: number
+}
+
+export interface InsightsData {
+  series: RevenuePoint[]
+  topProducts: TopProduct[]
+  statusMix: StatusCount[]
+}
+
 export type UpdateEventInput = CreateEventInput
 
 export type UpdateProductInput = CreateProductInput;

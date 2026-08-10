@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { QtyStepper } from "@/components/QtyStepper";
 import { ProductCard } from "@/components/ProductCard";
 import { EASE, Reveal } from "@/components/Reveal";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import type { Product, ProductVariant, ProductImage } from "@/types/storefront";
 
@@ -57,8 +58,56 @@ function ProductDetail() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl px-5 py-32 text-center text-sm text-muted-foreground">
-        Loading product details...
+      <div className="mx-auto max-w-7xl px-5 pt-8 sm:px-8">
+        <Skeleton className="mb-6 h-4 w-24" />
+
+        <div className="grid gap-10 pt-6 lg:grid-cols-2 lg:gap-16">
+          <div>
+            <Skeleton className="aspect-4/5 w-full rounded-sm" />
+            <div className="mt-3 flex gap-3 pb-1">
+              <Skeleton className="h-20 w-16 shrink-0 rounded-sm" />
+              <Skeleton className="h-20 w-16 shrink-0 rounded-sm" />
+              <Skeleton className="h-20 w-16 shrink-0 rounded-sm" />
+            </div>
+          </div>
+
+          <div className="lg:pt-4">
+            <Skeleton className="mb-4 h-4 w-16" />
+            <Skeleton className="mb-5 h-12 w-3/4" />
+            <Skeleton className="mb-6 h-8 w-32" />
+            <div className="mb-9 space-y-2">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-4/6" />
+            </div>
+
+            <div className="mt-9">
+              <Skeleton className="mb-3 h-3 w-20" />
+              <div className="flex gap-2">
+                <Skeleton className="h-12 w-16 rounded-sm" />
+                <Skeleton className="h-12 w-16 rounded-sm" />
+                <Skeleton className="h-12 w-16 rounded-sm" />
+              </div>
+            </div>
+
+            <div className="mt-9 flex flex-wrap items-center gap-3">
+              <Skeleton className="h-14 w-28 rounded-sm" />
+              <Skeleton className="h-14 min-w-[12rem] flex-1 rounded-sm" />
+              <Skeleton className="h-14 w-28 rounded-sm" />
+            </div>
+
+            <div className="rule-line mt-10 grid grid-cols-2 gap-6 pt-6">
+              <div>
+                <Skeleton className="mb-2 h-3 w-16" />
+                <Skeleton className="h-4 w-20" />
+              </div>
+              <div>
+                <Skeleton className="mb-2 h-3 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

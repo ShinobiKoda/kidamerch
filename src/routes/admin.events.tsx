@@ -72,7 +72,7 @@ function EventsPage() {
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
-  const { toggle: toggleFeatured, isPending: togglingFeatured } = useToggleFeatured();
+  const { toggle: toggleFeatured } = useToggleFeatured();
 
   const [filter, setFilter] = useState("all");
   const [open, setOpen] = useState(false);
@@ -80,6 +80,7 @@ function EventsPage() {
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<AdminEvent | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -292,9 +293,7 @@ function EventsPage() {
               key={e.id}
               className="overflow-hidden rounded-md border border-border bg-surface shadow-elevate"
             >
-              {e.cover && (
-                <img src={e.cover} alt="" className="aspect-video w-full object-cover" />
-              )}
+              {e.cover && <img src={e.cover} alt="" className="aspect-video w-full object-cover" />}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -310,13 +309,22 @@ function EventsPage() {
                   <button
                     type="button"
                     className={btnSubtle}
-                    disabled={togglingFeatured}
+                    disabled={togglingId !== null}
                     onClick={async () => {
-                      const ok = await toggleFeatured(e, events);
-                      if (!ok) toast.error("Only three events can be featured at once");
+                      setTogglingId(e.id);
+                      try {
+                        const ok = await toggleFeatured(e, events);
+                        if (!ok) toast.error("Only three events can be featured at once");
+                      } finally {
+                        setTogglingId(null);
+                      }
                     }}
                   >
-                    <Star size={14} className={e.featured ? "fill-primary text-primary" : ""} />
+                    {togglingId === e.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Star size={14} className={e.featured ? "fill-primary text-primary" : ""} />
+                    )}
                     {e.featured ? "Featured" : "Feature"}
                   </button>
                   <button type="button" className={btnSubtle} onClick={() => openEdit(e)}>
@@ -551,17 +559,18 @@ function EventsPage() {
         open={confirm !== null}
         title="Delete event?"
         body="It will be removed from the admin list and the storefront events page."
+        loading={deleteEvent.isPending}
         onCancel={() => setConfirm(null)}
         onConfirm={async () => {
           if (confirm) {
             try {
               await deleteEvent.mutateAsync(confirm.id);
               toast.success("Event deleted");
+              setConfirm(null);
             } catch (err) {
               toast.error(err instanceof Error ? err.message : "Failed to delete");
             }
           }
-          setConfirm(null);
         }}
       />
     </AdminShell>

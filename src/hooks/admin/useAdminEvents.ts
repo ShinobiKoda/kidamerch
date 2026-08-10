@@ -27,7 +27,12 @@ export function useCreateEvent() {
   const queryClient = useQueryClient()
   return useMutation<AdminEvent, Error, CreateEventInput>({
     mutationFn: adminEventsApi.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminEventKeys.all }),
+    onSuccess: () => {
+      // Fire-and-forget: don't return this promise, or React Query will
+      // wait for the background refetch before settling the mutation —
+      // which is what was keeping the "saving" spinner alive too long.
+      void queryClient.invalidateQueries({ queryKey: adminEventKeys.all })
+    },
   })
 }
 
@@ -35,7 +40,9 @@ export function useUpdateEvent() {
   const queryClient = useQueryClient()
   return useMutation<AdminEvent, Error, { id: string; input: UpdateEventInput }>({
     mutationFn: ({ id, input }) => adminEventsApi.update(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminEventKeys.all }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminEventKeys.all })
+    },
   })
 }
 
@@ -45,7 +52,9 @@ export function useDeleteEvent() {
     mutationFn: async (id) => {
       await adminEventsApi.remove(id)
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminEventKeys.all }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminEventKeys.all })
+    },
   })
 }
 
@@ -78,7 +87,7 @@ export function useToggleFeatured() {
           featured: nextFeatured,
         },
       })
-      queryClient.invalidateQueries({ queryKey: adminEventKeys.all })
+
       return true
     },
   }

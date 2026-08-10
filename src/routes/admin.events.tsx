@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarPlus, Pencil, Star, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { CalendarPlus, Loader2, Pencil, Star, Trash2, UploadCloud } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { getUploadSignature } from "@/api/cloudinary";
 import {
   ConfirmDialog,
   EmptyState,
@@ -33,6 +34,15 @@ export const Route = createFileRoute("/admin/events")({
 const KINDS: EventKind[] = ["Convention", "Meetup", "Signing", "Pop-up"];
 const STATUSES: EventStatus[] = ["Upcoming", "Past", "Cancelled"];
 
+type ImageItem = {
+  url: string;
+  isUploading?: boolean;
+  preview?: string;
+  abortController?: AbortController;
+};
+
+type ImageField = "cover" | "gallery";
+
 type FormState = {
   name: string;
   kind: EventKind;
@@ -41,6 +51,8 @@ type FormState = {
   description: string;
   status: EventStatus;
   featured: boolean;
+  cover: ImageItem[]; // capped at 1 item, array for shared upload-handler logic
+  gallery: ImageItem[];
 };
 
 const empty: FormState = {
@@ -51,6 +63,8 @@ const empty: FormState = {
   description: "",
   status: "Upcoming",
   featured: false,
+  cover: [],
+  gallery: [],
 };
 
 function EventsPage() {
@@ -66,6 +80,9 @@ function EventsPage() {
   const [form, setForm] = useState<FormState>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<AdminEvent | null>(null);
+
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const rows = useMemo(
     () =>
@@ -92,9 +109,100 @@ function EventsPage() {
       description: e.description,
       status: e.status,
       featured: e.featured,
+      cover: e.cover ? [{ url: e.cover }] : [],
+      gallery: (e.gallery ?? []).map((url) => ({ url })),
     });
     setErrors({});
     setOpen(true);
+  };
+
+  // Shared upload handler for both the single cover image and the multi-image gallery.
+  // `field` selects which form array gets updated; cover replaces, gallery appends.
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: ImageField) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    e.target.value = ""; // reset so re-selecting the same file re-triggers onChange
+
+    const newImages: ImageItem[] = [];
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File ${file.name} exceeds 10MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+      const abortController = new AbortController();
+      newImages.push({
+        url: "",
+        preview: URL.createObjectURL(file),
+        isUploading: true,
+        abortController,
+      });
+    }
+
+    if (!validFiles.length) return;
+
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === "cover" ? newImages.slice(0, 1) : [...prev.gallery, ...newImages],
+    }));
+
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i] as File;
+      const imageItem = newImages[i] as ImageItem;
+
+      try {
+        const sig = await getUploadSignature();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("api_key", sig.apiKey);
+        formData.append("timestamp", sig.timestamp.toString());
+        formData.append("signature", sig.signature);
+        formData.append("folder", sig.folder);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
+          method: "POST",
+          body: formData,
+          signal: imageItem.abortController?.signal ?? null,
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+
+        setForm((prev) => {
+          const list = prev[field];
+          const idx = list.findIndex((img) => img.abortController === imageItem.abortController);
+          if (idx === -1) return prev; // cancelled or already replaced
+
+          const copy = [...list];
+          const updated = { ...copy[idx], url: data.secure_url, isUploading: false };
+          delete updated.preview;
+          delete updated.abortController;
+          copy[idx] = updated;
+          return { ...prev, [field]: copy };
+        });
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        toast.error(`Failed to upload ${file.name}`);
+        setForm((prev) => ({
+          ...prev,
+          [field]: prev[field].filter((img) => img.abortController !== imageItem.abortController),
+        }));
+      }
+    }
+  };
+
+  const removeImage = (field: ImageField, index: number) => {
+    setForm((prev) => {
+      const list = prev[field];
+      const img = list[index];
+      if (img?.isUploading && img.abortController) {
+        img.abortController.abort();
+      }
+      return { ...prev, [field]: list.filter((_, i) => i !== index) };
+    });
   };
 
   const submit = async () => {
@@ -103,6 +211,8 @@ function EventsPage() {
     if (!form.date) next["date"] = "Pick a date.";
     if (!form.location.trim()) next["location"] = "Location is required.";
     if (form.description.trim().length < 10) next["description"] = "Add at least 10 characters.";
+    if (form.cover.some((img) => img.isUploading) || form.gallery.some((img) => img.isUploading))
+      next["images"] = "Wait for uploads to finish.";
     setErrors(next);
     if (Object.keys(next).length) return;
 
@@ -112,8 +222,8 @@ function EventsPage() {
       date: form.date,
       location: form.location.trim(),
       description: form.description.trim(),
-      cover: editing?.cover ?? "",
-      gallery: editing?.gallery ?? [],
+      cover: form.cover[0]?.url.trim() ?? "",
+      gallery: form.gallery.map((img) => img.url.trim()).filter(Boolean),
       status: form.status,
       featured: form.featured,
     };
@@ -236,6 +346,7 @@ function EventsPage() {
               Cancel
             </button>
             <button type="button" className={btnPrimary} onClick={submit} disabled={saving}>
+              {saving && <Loader2 size={16} className="animate-spin" />}
               {saving ? "Saving…" : editing ? "Save changes" : "Create event"}
             </button>
           </>
@@ -302,6 +413,129 @@ function EventsPage() {
               className={`${inputCls} h-auto py-2.5`}
             />
           </Field>
+
+          {/* Cover image — single, replaces on new upload */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="eyebrow text-[10px] text-muted-foreground">Cover image</span>
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={coverInputRef}
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, "cover")}
+                />
+                <button
+                  type="button"
+                  className={btnSubtle}
+                  onClick={() => coverInputRef.current?.click()}
+                >
+                  <UploadCloud size={14} /> Upload
+                </button>
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Shown on the event card and detail page. Max size: 10MB.
+            </p>
+            <div className="mt-2">
+              {form.cover.length === 0 ? (
+                <div className="grid h-28 place-items-center rounded-sm border border-dashed border-border bg-surface-2 text-xs text-muted-foreground">
+                  No cover image yet
+                </div>
+              ) : (
+                form.cover.map((img, i) => (
+                  <div
+                    key={i}
+                    className="group relative h-40 w-full overflow-hidden rounded-sm border border-border bg-surface-2"
+                  >
+                    {img.isUploading && (
+                      <div className="absolute inset-0 z-10 grid place-items-center bg-background/50">
+                        <Loader2 size={20} className="animate-spin text-primary" />
+                      </div>
+                    )}
+                    {(img.preview || img.url) && (
+                      <img
+                        src={img.preview || img.url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      aria-label={img.isUploading ? "Cancel upload" : "Remove cover image"}
+                      onClick={() => removeImage("cover", i)}
+                      className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-sm bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Gallery — multiple, appends on upload */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="eyebrow text-[10px] text-muted-foreground">Gallery</span>
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  ref={galleryInputRef}
+                  className="hidden"
+                  onChange={(e) => handleImageUpload(e, "gallery")}
+                />
+                <button
+                  type="button"
+                  className={btnSubtle}
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <UploadCloud size={14} /> Upload
+                </button>
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Extra photos shown on the event detail page. Max size: 10MB each.
+            </p>
+            {form.gallery.length > 0 && (
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {form.gallery.map((img, i) => (
+                  <div
+                    key={i}
+                    className="group relative aspect-square overflow-hidden rounded-sm border border-border bg-surface-2"
+                  >
+                    {img.isUploading && (
+                      <div className="absolute inset-0 z-10 grid place-items-center bg-background/50">
+                        <Loader2 size={16} className="animate-spin text-primary" />
+                      </div>
+                    )}
+                    {(img.preview || img.url) && (
+                      <img
+                        src={img.preview || img.url}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      aria-label={img.isUploading ? "Cancel upload" : "Remove image"}
+                      onClick={() => removeImage("gallery", i)}
+                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-sm bg-background/80 text-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {errors["images"] && (
+              <p className="mt-1.5 text-xs font-medium text-primary">{errors["images"]}</p>
+            )}
+          </div>
+
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

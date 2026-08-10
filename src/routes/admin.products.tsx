@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Copy, PackagePlus, Pencil, Search, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Copy, PackagePlus, Pencil, Search, Trash2, Loader2, UploadCloud } from "lucide-react";
+import { useMemo, useState, useRef } from "react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { getUploadSignature } from "@/api/cloudinary";
 import {
   ConfirmDialog,
   EmptyState,
@@ -41,6 +42,13 @@ const PER_PAGE = 8;
 type DisplayStatus = "Active" | "Draft" | "Out of Stock";
 type FormStatus = "Active" | "Draft";
 
+type ImageItem = {
+  url: string;
+  isUploading?: boolean;
+  preview?: string;
+  abortController?: AbortController;
+};
+
 type FormState = {
   name: string;
   category: string;
@@ -49,7 +57,7 @@ type FormState = {
   status: FormStatus;
   stock: string;
   variants: { label: string; stock: string }[];
-  images: string[];
+  images: ImageItem[];
 };
 
 const emptyForm = (category: string): FormState => ({
@@ -91,7 +99,7 @@ const toForm = (p: Product): FormState => {
       label: v.size || v.color || v.design || "",
       stock: String(v.stock ?? 0),
     })),
-    images: (p.images ?? []).map((img) => img.url),
+    images: (p.images ?? []).map((img) => ({ url: img.url })),
   };
 };
 
@@ -124,7 +132,7 @@ function formToInput(form: FormState): CreateProductInput {
               stock: Number(form.stock) || 0,
             },
           ],
-    imageUrls: form.images.map((u) => u.trim()).filter(Boolean),
+    imageUrls: form.images.map((u) => u.url.trim()).filter(Boolean),
   };
 }
 
@@ -218,6 +226,80 @@ function ProductsPage() {
       setFormOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    
+    e.target.value = ""; // reset
+
+    const newImages: ImageItem[] = [];
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File ${file.name} exceeds 10MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+      const abortController = new AbortController();
+      newImages.push({
+        url: "",
+        preview: URL.createObjectURL(file),
+        isUploading: true,
+        abortController,
+      });
+    }
+
+    if (!validFiles.length) return;
+
+    setForm((prev) => ({ ...prev, images: [...prev.images, ...newImages] }));
+
+    for (let i = 0; i < validFiles.length; i++) {
+      const file = validFiles[i] as File;
+      const imageItem = newImages[i] as ImageItem;
+      
+      try {
+        const sig = await getUploadSignature();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("api_key", sig.apiKey);
+        formData.append("timestamp", sig.timestamp.toString());
+        formData.append("signature", sig.signature);
+        formData.append("folder", sig.folder);
+
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
+          method: "POST",
+          body: formData,
+          signal: imageItem.abortController?.signal ?? null,
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+        const data = await res.json();
+        
+        setForm((prev) => {
+          const idx = prev.images.findIndex((img) => img.abortController === imageItem.abortController);
+          if (idx === -1) return prev; // cancelled
+          
+          const copy = [...prev.images];
+          const updated = { ...copy[idx], url: data.secure_url, isUploading: false };
+          delete updated.preview;
+          delete updated.abortController;
+          copy[idx] = updated;
+          return { ...prev, images: copy };
+        });
+      } catch (err: any) {
+        if (err.name === "AbortError") return;
+        toast.error(`Failed to upload ${file.name}`);
+        setForm((prev) => ({
+          ...prev,
+          images: prev.images.filter((img) => img.abortController !== imageItem.abortController)
+        }));
+      }
     }
   };
 
@@ -489,10 +571,11 @@ function ProductsPage() {
         title={editing ? "Edit product" : "New product"}
         footer={
           <>
-            <button type="button" className={btnGhost} onClick={() => setFormOpen(false)}>
+            <button type="button" className={btnGhost} onClick={() => setFormOpen(false)} disabled={saving}>
               Cancel
             </button>
             <button type="button" className={btnPrimary} onClick={submit} disabled={saving}>
+              {saving && <Loader2 size={16} className="animate-spin" />}
               {saving ? "Saving…" : editing ? "Save changes" : "Create product"}
             </button>
           </>
@@ -570,44 +653,70 @@ function ProductsPage() {
           <div>
             <div className="flex items-center justify-between">
               <span className="eyebrow text-[10px] text-muted-foreground">Images</span>
-              <button
-                type="button"
-                className={btnSubtle}
-                onClick={() => setForm({ ...form, images: [...form.images, ""] })}
-              >
-                Add image
-              </button>
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+                <button
+                  type="button"
+                  className={btnSubtle}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <UploadCloud size={14} /> Upload
+                </button>
+                <button
+                  type="button"
+                  className={btnSubtle}
+                  onClick={() => setForm({ ...form, images: [...form.images, { url: "" }] })}
+                >
+                  Add link
+                </button>
+              </div>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Paste one image URL per row — the first one is the main product image.
+              Upload images directly or paste URLs. The first one is the main product image. Max size: 10MB.
             </p>
             <div className="mt-2 space-y-2">
-              {form.images.map((url, i) => (
+              {form.images.map((img, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-sm border border-border bg-surface-2 text-[10px] text-muted-foreground">
-                    {url.trim() ? (
-                      <img src={url} alt="" className="h-full w-full object-cover" />
+                  <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-sm border border-border bg-surface-2 text-[10px] text-muted-foreground">
+                    {img.isUploading && (
+                      <div className="absolute inset-0 z-10 grid place-items-center bg-background/50">
+                        <Loader2 size={16} className="animate-spin text-primary" />
+                      </div>
+                    )}
+                    {img.preview || img.url.trim() ? (
+                      <img src={img.preview || img.url} alt="" className="h-full w-full object-cover" />
                     ) : (
                       i + 1
                     )}
                   </span>
                   <input
-                    value={url}
+                    value={img.url}
                     onChange={(e) => {
                       const images = [...form.images];
-                      images[i] = e.target.value;
+                      images[i] = { ...images[i], url: e.target.value };
                       setForm({ ...form, images });
                     }}
-                    placeholder="https://… (Cloudinary URL)"
+                    placeholder={img.isUploading ? "Uploading..." : "https://… "}
                     aria-label={`Image URL ${i + 1}`}
                     className={inputCls}
+                    disabled={img.isUploading}
                   />
                   <button
                     type="button"
-                    aria-label="Remove image"
-                    onClick={() =>
-                      setForm({ ...form, images: form.images.filter((_, j) => j !== i) })
-                    }
+                    aria-label={img.isUploading ? "Cancel upload" : "Remove image"}
+                    onClick={() => {
+                      if (img.isUploading && img.abortController) {
+                        img.abortController.abort();
+                      }
+                      setForm({ ...form, images: form.images.filter((_, j) => j !== i) });
+                    }}
                     className={`${btnSubtle} shrink-0`}
                   >
                     <Trash2 size={14} />
@@ -694,6 +803,7 @@ function ProductsPage() {
 
       <ConfirmDialog
         open={confirm !== null}
+        loading={deleteProducts.isPending}
         title={
           confirm && confirm.length > 1 ? `Delete ${confirm.length} products?` : "Delete product?"
         }

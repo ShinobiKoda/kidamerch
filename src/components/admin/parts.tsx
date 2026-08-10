@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { EASE } from "@/components/Reveal";
 
@@ -185,6 +185,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   children,
+  loading,
 }: {
   open: boolean;
   title: string;
@@ -193,6 +194,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
   children?: ReactNode;
+  loading?: boolean;
 }) {
   return (
     <AnimatePresence>
@@ -218,10 +220,11 @@ export function ConfirmDialog({
             <p className="mt-2 text-sm text-muted-foreground">{body}</p>
             {children && <div className="mt-4">{children}</div>}
             <div className="mt-6 flex justify-end gap-2">
-              <button type="button" onClick={onCancel} className={btnGhost}>
+              <button type="button" onClick={onCancel} className={btnGhost} disabled={loading}>
                 Cancel
               </button>
-              <button type="button" onClick={onConfirm} className={btnPrimary}>
+              <button type="button" onClick={onConfirm} className={btnPrimary} disabled={loading}>
+                {loading && <Loader2 size={16} className="animate-spin" />}
                 {confirmLabel}
               </button>
             </div>

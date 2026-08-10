@@ -92,7 +92,7 @@ function ProductDetail() {
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
               <Skeleton className="h-14 w-28 rounded-sm" />
-              <Skeleton className="h-14 min-w-[12rem] flex-1 rounded-sm" />
+              <Skeleton className="h-14 min-w-48 flex-1 rounded-sm" />
               <Skeleton className="h-14 w-28 rounded-sm" />
             </div>
 

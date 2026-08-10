@@ -28,7 +28,7 @@ export function useCreateProduct() {
   const queryClient = useQueryClient()
   return useMutation<Product, Error, CreateProductInput>({
     mutationFn: adminProductsApi.create,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProductKeys.all }),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: adminProductKeys.all }) },
   })
 }
 
@@ -36,7 +36,7 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient()
   return useMutation<Product, Error, { id: string; input: UpdateProductInput }>({
     mutationFn: ({ id, input }) => adminProductsApi.update(id, input),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProductKeys.all }),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: adminProductKeys.all }) },
   })
 }
 
@@ -46,7 +46,7 @@ export function useDeleteProducts() {
     mutationFn: async (ids) => {
       await Promise.all(ids.map((id) => adminProductsApi.remove(id)))
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProductKeys.all }),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: adminProductKeys.all }) },
   })
 }
 
@@ -71,7 +71,7 @@ export function useDuplicateProduct() {
         })),
         imageUrls: product.images?.map((img) => img.url),
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProductKeys.all }),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: adminProductKeys.all }) },
   })
 }
 
@@ -101,6 +101,6 @@ export function useBulkSetActive() {
         ),
       )
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminProductKeys.all }),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: adminProductKeys.all }) },
   })
 }

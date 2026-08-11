@@ -33,38 +33,41 @@ function Checkout() {
   const whatsappHref = buildWhatsAppLink(buildWhatsAppOrderMessage(lines, total));
 
   const handleCheckout = async () => {
-    if (lines.length === 0) return;
-    setIsSubmitting(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          lines,
-          subtotal,
-          shipping,
-          tax,
-          total
-        })
-      });
-      
-      if (!res.ok) throw new Error("Failed to record order");
-      
-      clearCart();
-      window.open(whatsappHref, '_blank');
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to process order. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+  if (lines.length === 0) return;
+  setIsSubmitting(true);
+
+  const whatsappWindow = window.open("", "_blank");
+
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ lines, subtotal, shipping, tax, total }),
+    });
+
+    if (!res.ok) throw new Error("Failed to record order");
+
+    clearCart();
+
+    if (whatsappWindow) {
+      whatsappWindow.location.href = whatsappHref;
+    } else {
+      window.location.href = whatsappHref;
     }
-  };
+  } catch (error) {
+    console.error(error);
+    whatsappWindow?.close();
+    toast.error("Failed to process order. Please try again.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="relative mx-auto max-w-4xl px-5 pt-10 sm:px-8">

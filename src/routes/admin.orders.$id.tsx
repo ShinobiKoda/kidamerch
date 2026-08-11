@@ -18,10 +18,11 @@ import { formatPrice } from "@/data/products";
 import {
   useAdminOrder,
   useAdvanceOrder,
+  useUpdateOrder,
   useSetOrderStatus,
   useSetTracking,
 } from "@/hooks/admin/useAdminOrders";
-import type { OrderStatus } from "@/types/admin";
+import type { OrderStatus, PaymentStatus } from "@/types/admin";
 
 export const Route = createFileRoute("/admin/orders/$id")({
   component: OrderDetail,
@@ -41,6 +42,7 @@ function OrderDetail() {
   const { id } = useParams({ from: "/admin/orders/$id" });
   const { data: order, isLoading } = useAdminOrder(id);
   const advanceOrder = useAdvanceOrder();
+  const updateOrder = useUpdateOrder();
   const setOrderStatus = useSetOrderStatus();
   const setTracking = useSetTracking();
 
@@ -81,28 +83,7 @@ function OrderDetail() {
   return (
     <AdminShell
       title={`Order ${order.id.slice(0, 8)}`}
-      actions={
-        <>
-          {next && (
-            <button
-              type="button"
-              className={btnPrimary}
-              onClick={async () => {
-                await advanceOrder.mutateAsync(order);
-                toast.success(`Marked ${statusLabel(next)}`);
-              }}
-            >
-              Mark {statusLabel(next)}
-            </button>
-          )}
-          <button type="button" className={btnGhost} onClick={() => setDialog("refund")}>
-            Refund
-          </button>
-          <button type="button" className={btnGhost} onClick={() => setDialog("cancel")}>
-            Cancel
-          </button>
-        </>
-      }
+      actions={undefined}
     >
       <Link
         to="/admin/orders"
@@ -111,7 +92,56 @@ function OrderDetail() {
         <ArrowLeft size={14} /> All orders
       </Link>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* ── Order Actions Panel ── */}
+      <Panel>
+        <PanelHead title="Order Actions" />
+        <div className="grid gap-4 px-4 py-4 sm:grid-cols-2">
+          <div>
+            <label className="eyebrow mb-1.5 block text-[10px] text-muted-foreground">Order Status</label>
+            <select
+              className={inputCls + " w-full"}
+              value={order.status}
+              onChange={async (e) => {
+                const status = e.target.value as OrderStatus;
+                await updateOrder.mutateAsync({
+                  id: order.id,
+                  input: { status, historyLabel: `Marked ${status}` }
+                });
+                toast.success(`Status updated to ${status}`);
+              }}
+            >
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+          <div>
+            <label className="eyebrow mb-1.5 block text-[10px] text-muted-foreground">Payment Status</label>
+            <select
+              className={inputCls + " w-full"}
+              value={order.paymentStatus}
+              onChange={async (e) => {
+                const paymentStatus = e.target.value as PaymentStatus;
+                await updateOrder.mutateAsync({
+                  id: order.id,
+                  input: { paymentStatus, historyLabel: `Payment marked ${paymentStatus}` }
+                });
+                toast.success(`Payment updated to ${paymentStatus}`);
+              }}
+            >
+              <option value="pending">Unpaid</option>
+              <option value="paid">Paid</option>
+              <option value="failed">Failed</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+      </Panel>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Panel>
             <PanelHead title="Items" action={<StatusBadge status={statusLabel(order.status)} />} />

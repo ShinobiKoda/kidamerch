@@ -152,15 +152,17 @@ function OrdersPage() {
               </thead>
               <tbody>
                 {rows.map((o: Order) => (
-                  <tr key={o.id} className="border-b border-border last:border-0 hover:bg-secondary/40">
+                  <tr
+                    key={o.id}
+                    className="border-b border-border last:border-0 hover:bg-secondary/40 cursor-pointer"
+                    onClick={() => {
+                      window.location.href = `/admin/orders/${o.id}`;
+                    }}
+                  >
                     <td className="px-3 py-3">
-                      <Link
-                        to="/admin/orders/$id"
-                        params={{ id: o.id }}
-                        className="font-semibold tabular-nums hover:text-primary"
-                      >
+                      <span className="font-semibold tabular-nums text-primary">
                         {o.id.slice(0, 8)}
-                      </Link>
+                      </span>
                     </td>
                     <td className="px-3 py-3">
                       <p className="font-medium">{o.customerName || "Guest"}</p>
@@ -183,18 +185,14 @@ function OrdersPage() {
                       <StatusBadge status={statusLabel(o.status)} />
                     </td>
                     <td className="px-3 py-3 text-right">
-                      {canAdvance(o.status) && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await advanceOrder.mutateAsync(o);
-                            toast.success("Order advanced");
-                          }}
-                          className="text-xs font-semibold text-primary"
-                        >
-                          Advance
-                        </button>
-                      )}
+                      <Link
+                        to="/admin/orders/$id"
+                        params={{ id: o.id }}
+                        className="text-xs font-semibold text-primary hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View →
+                      </Link>
                     </td>
                   </tr>
                 ))}

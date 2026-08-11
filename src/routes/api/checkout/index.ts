@@ -42,8 +42,8 @@ export const Route = createFileRoute('/api/checkout/')({
 
           if (orderError) throw orderError
 
-          const orderItems = lines.map((line: any) => {
-            const v = line.variant
+          const orderItems = lines.map((item: any) => {
+            const v = item.line.variant
             let vDetails = 'Standard'
             if (v) {
               const parts = []
@@ -55,10 +55,10 @@ export const Route = createFileRoute('/api/checkout/')({
 
             return {
               order_id: order.id,
-              variant_id: line.variant?.id ?? line.product.variants?.[0]?.id,
-              product_name: line.product.name,
-              quantity: line.qty,
-              price_at_order: line.product.basePrice,
+              variant_id: item.line.variant?.id ?? item.product.variants?.[0]?.id,
+              product_name: item.product.name,
+              quantity: item.line.qty,
+              price_at_order: item.product.basePrice,
               variant_details: vDetails,
             }
           })

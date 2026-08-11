@@ -38,13 +38,61 @@ export function useAdminOrder(id: string) {
   });
 }
 
-function useUpdateOrder() {
+export function useUpdateOrder() {
   const queryClient = useQueryClient();
   return useMutation<Order, Error, { id: string; input: UpdateOrderInput }>({
     mutationFn: ({ id, input }) => adminOrdersApi.update(id, input),
-    onSuccess: (order) => {
+
+    onMutate: async ({ id, input }) => {
+      // Cancel any in-flight refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: adminOrderKeys.all });
+      await queryClient.cancelQueries({ queryKey: adminOrderKeys.detail(id) });
+
+      // Snapshot current cache for rollback
+      const prevDetail = queryClient.getQueryData<Order>(adminOrderKeys.detail(id));
+      const prevAll = queryClient.getQueryData<Order[]>(adminOrderKeys.all);
+
+      // Optimistically update the detail cache
+      if (prevDetail) {
+        queryClient.setQueryData<Order>(adminOrderKeys.detail(id), {
+          ...prevDetail,
+          ...(input.status ? { status: input.status } : {}),
+          ...(input.paymentStatus ? { paymentStatus: input.paymentStatus } : {}),
+          ...(input.trackingNumber ? { trackingNumber: input.trackingNumber } : {}),
+        });
+      }
+
+      // Optimistically update the list cache
+      if (prevAll) {
+        queryClient.setQueryData<Order[]>(adminOrderKeys.all, prevAll.map((o) =>
+          o.id === id
+            ? {
+                ...o,
+                ...(input.status ? { status: input.status } : {}),
+                ...(input.paymentStatus ? { paymentStatus: input.paymentStatus } : {}),
+                ...(input.trackingNumber ? { trackingNumber: input.trackingNumber } : {}),
+              }
+            : o
+        ));
+      }
+
+      return { prevDetail, prevAll };
+    },
+
+    onError: (_err, { id }, context) => {
+      // Roll back to previous cache on failure
+      if (context?.prevDetail) {
+        queryClient.setQueryData(adminOrderKeys.detail(id), context.prevDetail);
+      }
+      if (context?.prevAll) {
+        queryClient.setQueryData(adminOrderKeys.all, context.prevAll);
+      }
+    },
+
+    onSettled: (_data, _err, { id }) => {
+      // Refetch to get the server's authoritative state
       queryClient.invalidateQueries({ queryKey: adminOrderKeys.all });
-      queryClient.setQueryData(adminOrderKeys.detail(order.id), order);
+      queryClient.invalidateQueries({ queryKey: adminOrderKeys.detail(id) });
     },
   });
 }

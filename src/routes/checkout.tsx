@@ -2,12 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Loader2, MessageCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { formatPrice } from "@/data/products";
 import { useStore } from "@/lib/store";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { EASE } from "@/components/Reveal";
 import { buildWhatsAppOrderMessage, buildWhatsAppLink } from "@/lib/whatsapp";
-
+import { supabase } from "@/lib/supabase";
 import { seo, canonicalLink } from "@/lib/seo";
 
 export const Route = createFileRoute("/checkout")({
@@ -25,10 +26,45 @@ export const Route = createFileRoute("/checkout")({
 const STEPS = ["Shipping", "Payment", "Confirmation"] as const;
 
 function Checkout() {
-  const { lines, subtotal, shipping, tax, total } = useStore();
+  const { lines, subtotal, shipping, tax, total, clearCart } = useStore();
   const [step] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const whatsappHref = buildWhatsAppLink(buildWhatsAppOrderMessage(lines, total));
+
+  const handleCheckout = async () => {
+    if (lines.length === 0) return;
+    setIsSubmitting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          lines,
+          subtotal,
+          shipping,
+          tax,
+          total
+        })
+      });
+      
+      if (!res.ok) throw new Error("Failed to record order");
+      
+      clearCart();
+      window.open(whatsappHref, '_blank');
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to process order. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="relative mx-auto max-w-4xl px-5 pt-10 sm:px-8">
@@ -53,14 +89,20 @@ function Checkout() {
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               {lines.length > 0 && (
-                <a
-                  href={whatsappHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="eyebrow inline-flex h-14 items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90 md:flex-1"
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  disabled={isSubmitting}
+                  className="eyebrow inline-flex h-14 items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed md:flex-1"
                 >
-                  <MessageCircle size={16} /> WhatsApp
-                </a>
+                  {isSubmitting ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <>
+                      <MessageCircle size={16} /> WhatsApp
+                    </>
+                  )}
+                </button>
               )}
               <Link
                 to="/shop"

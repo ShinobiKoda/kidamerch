@@ -34,6 +34,7 @@ import { Route as AdminCustomersEmailRouteImport } from './routes/admin.customer
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin.orders.index'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin.orders.$id'
 import { Route as ApiAdminSettingsRouteImport } from './routes/api/admin/settings'
+import { Route as ApiCheckoutIndexRouteImport } from './routes/api/checkout/index'
 import { Route as ApiAdminCategoriesIndexRouteImport } from './routes/api/admin/categories/index'
 import { Route as ApiAdminCategoriesIdRouteImport } from './routes/api/admin/categories/$id'
 import { Route as ApiAdminEventsIndexRouteImport } from './routes/api/admin/events/index'
@@ -172,6 +173,11 @@ const ApiAdminSettingsRoute = ApiAdminSettingsRouteImport.update({
   path: '/api/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCheckoutIndexRoute = ApiCheckoutIndexRouteImport.update({
+  id: '/api/checkout/',
+  path: '/api/checkout/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminCategoriesIndexRoute = ApiAdminCategoriesIndexRouteImport.update({
   id: '/api/admin/categories/',
   path: '/api/admin/categories/',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/settings': typeof ApiAdminSettingsRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/api/checkout/': typeof ApiCheckoutIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/events/$id': typeof ApiAdminEventsIdRoute
   '/api/admin/inventory/adjustments': typeof ApiAdminInventoryAdjustmentsRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/api/admin/settings': typeof ApiAdminSettingsRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
+  '/api/checkout': typeof ApiCheckoutIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/events/$id': typeof ApiAdminEventsIdRoute
   '/api/admin/inventory/adjustments': typeof ApiAdminInventoryAdjustmentsRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/api/admin/settings': typeof ApiAdminSettingsRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/api/checkout/': typeof ApiCheckoutIndexRoute
   '/api/admin/categories/$id': typeof ApiAdminCategoriesIdRoute
   '/api/admin/events/$id': typeof ApiAdminEventsIdRoute
   '/api/admin/inventory/adjustments': typeof ApiAdminInventoryAdjustmentsRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/api/admin/settings'
     | '/admin/customers/'
     | '/admin/orders/'
+    | '/api/checkout/'
     | '/api/admin/categories/$id'
     | '/api/admin/events/$id'
     | '/api/admin/inventory/adjustments'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/api/admin/settings'
     | '/admin/customers'
     | '/admin/orders'
+    | '/api/checkout'
     | '/api/admin/categories/$id'
     | '/api/admin/events/$id'
     | '/api/admin/inventory/adjustments'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/api/admin/settings'
     | '/admin/customers/'
     | '/admin/orders/'
+    | '/api/checkout/'
     | '/api/admin/categories/$id'
     | '/api/admin/events/$id'
     | '/api/admin/inventory/adjustments'
@@ -483,6 +495,7 @@ export interface RootRouteChildren {
   ApiNewsletterRoute: typeof ApiNewsletterRoute
   ProductIdRoute: typeof ProductIdRoute
   ApiAdminSettingsRoute: typeof ApiAdminSettingsRoute
+  ApiCheckoutIndexRoute: typeof ApiCheckoutIndexRoute
   ApiAdminCategoriesIdRoute: typeof ApiAdminCategoriesIdRoute
   ApiAdminEventsIdRoute: typeof ApiAdminEventsIdRoute
   ApiAdminInventoryAdjustmentsRoute: typeof ApiAdminInventoryAdjustmentsRoute
@@ -674,6 +687,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/checkout/': {
+      id: '/api/checkout/'
+      path: '/api/checkout'
+      fullPath: '/api/checkout/'
+      preLoaderRoute: typeof ApiCheckoutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/categories/': {
       id: '/api/admin/categories/'
       path: '/api/admin/categories'
@@ -808,6 +828,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNewsletterRoute: ApiNewsletterRoute,
   ProductIdRoute: ProductIdRoute,
   ApiAdminSettingsRoute: ApiAdminSettingsRoute,
+  ApiCheckoutIndexRoute: ApiCheckoutIndexRoute,
   ApiAdminCategoriesIdRoute: ApiAdminCategoriesIdRoute,
   ApiAdminEventsIdRoute: ApiAdminEventsIdRoute,
   ApiAdminInventoryAdjustmentsRoute: ApiAdminInventoryAdjustmentsRoute,

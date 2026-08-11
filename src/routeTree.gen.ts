@@ -21,7 +21,9 @@ import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminInsightsRouteImport } from './routes/admin.insights'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
+import { Route as AdminManageRouteImport } from './routes/admin.manage'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as ApiNewsletterRouteImport } from './routes/api/newsletter'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customers.index'
 import { Route as AdminCustomersEmailRouteImport } from './routes/admin.customers.$email'
@@ -34,6 +36,7 @@ import { Route as ApiAdminEventsIndexRouteImport } from './routes/api/admin/even
 import { Route as ApiAdminEventsIdRouteImport } from './routes/api/admin/events/$id'
 import { Route as ApiAdminInsightsIndexRouteImport } from './routes/api/admin/insights/index'
 import { Route as ApiAdminInventoryAdjustmentsRouteImport } from './routes/api/admin/inventory/adjustments'
+import { Route as ApiAdminManageIndexRouteImport } from './routes/api/admin/manage/index'
 import { Route as ApiAdminOrdersIndexRouteImport } from './routes/api/admin/orders/index'
 import { Route as ApiAdminOrdersIdRouteImport } from './routes/api/admin/orders/$id'
 import { Route as ApiAdminProductsIndexRouteImport } from './routes/api/admin/products/index'
@@ -99,10 +102,20 @@ const AdminInventoryRoute = AdminInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminManageRoute = AdminManageRouteImport.update({
+  id: '/manage',
+  path: '/manage',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
   getParentRoute: () => AdminRoute,
+} as any)
+const ApiNewsletterRoute = ApiNewsletterRouteImport.update({
+  id: '/api/newsletter',
+  path: '/api/newsletter',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
@@ -165,6 +178,11 @@ const ApiAdminInventoryAdjustmentsRoute =
     path: '/api/admin/inventory/adjustments',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminManageIndexRoute = ApiAdminManageIndexRouteImport.update({
+  id: '/api/admin/manage/',
+  path: '/api/admin/manage/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminOrdersIndexRoute = ApiAdminOrdersIndexRouteImport.update({
   id: '/api/admin/orders/',
   path: '/api/admin/orders/',
@@ -198,7 +216,9 @@ export interface FileRoutesByFullPath {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers/$email': typeof AdminCustomersEmailRoute
@@ -214,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/manage/': typeof ApiAdminManageIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
@@ -228,7 +249,9 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/customers/$email': typeof AdminCustomersEmailRoute
@@ -244,6 +267,7 @@ export interface FileRoutesByTo {
   '/api/admin/categories': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/manage': typeof ApiAdminManageIndexRoute
   '/api/admin/orders': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products': typeof ApiAdminProductsIndexRoute
 }
@@ -260,7 +284,9 @@ export interface FileRoutesById {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers/$email': typeof AdminCustomersEmailRoute
@@ -276,6 +302,7 @@ export interface FileRoutesById {
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/manage/': typeof ApiAdminManageIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
 }
@@ -293,7 +320,9 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/manage'
     | '/admin/products'
+    | '/api/newsletter'
     | '/product/$id'
     | '/admin/'
     | '/admin/customers/$email'
@@ -309,6 +338,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/'
     | '/api/admin/events/'
     | '/api/admin/insights/'
+    | '/api/admin/manage/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesByTo: FileRoutesByTo
@@ -323,7 +353,9 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/manage'
     | '/admin/products'
+    | '/api/newsletter'
     | '/product/$id'
     | '/admin'
     | '/admin/customers/$email'
@@ -339,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories'
     | '/api/admin/events'
     | '/api/admin/insights'
+    | '/api/admin/manage'
     | '/api/admin/orders'
     | '/api/admin/products'
   id:
@@ -354,7 +387,9 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/manage'
     | '/admin/products'
+    | '/api/newsletter'
     | '/product/$id'
     | '/admin/'
     | '/admin/customers/$email'
@@ -370,6 +405,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/'
     | '/api/admin/events/'
     | '/api/admin/insights/'
+    | '/api/admin/manage/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
   fileRoutesById: FileRoutesById
@@ -382,6 +418,7 @@ export interface RootRouteChildren {
   EventsRoute: typeof EventsRoute
   ShopRoute: typeof ShopRoute
   WishlistRoute: typeof WishlistRoute
+  ApiNewsletterRoute: typeof ApiNewsletterRoute
   ProductIdRoute: typeof ProductIdRoute
   ApiAdminSettingsRoute: typeof ApiAdminSettingsRoute
   ApiAdminCategoriesIdRoute: typeof ApiAdminCategoriesIdRoute
@@ -392,6 +429,7 @@ export interface RootRouteChildren {
   ApiAdminCategoriesIndexRoute: typeof ApiAdminCategoriesIndexRoute
   ApiAdminEventsIndexRoute: typeof ApiAdminEventsIndexRoute
   ApiAdminInsightsIndexRoute: typeof ApiAdminInsightsIndexRoute
+  ApiAdminManageIndexRoute: typeof ApiAdminManageIndexRoute
   ApiAdminOrdersIndexRoute: typeof ApiAdminOrdersIndexRoute
   ApiAdminProductsIndexRoute: typeof ApiAdminProductsIndexRoute
 }
@@ -482,12 +520,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInventoryRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/manage': {
+      id: '/admin/manage'
+      path: '/manage'
+      fullPath: '/admin/manage'
+      preLoaderRoute: typeof AdminManageRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/products': {
       id: '/admin/products'
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AdminProductsRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/api/newsletter': {
+      id: '/api/newsletter'
+      path: '/api/newsletter'
+      fullPath: '/api/newsletter'
+      preLoaderRoute: typeof ApiNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/product/$id': {
       id: '/product/$id'
@@ -573,6 +625,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminInventoryAdjustmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/manage/': {
+      id: '/api/admin/manage/'
+      path: '/api/admin/manage'
+      fullPath: '/api/admin/manage/'
+      preLoaderRoute: typeof ApiAdminManageIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/orders/': {
       id: '/api/admin/orders/'
       path: '/api/admin/orders'
@@ -609,6 +668,7 @@ interface AdminRouteChildren {
   AdminEventsRoute: typeof AdminEventsRoute
   AdminInsightsRoute: typeof AdminInsightsRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminManageRoute: typeof AdminManageRoute
   AdminProductsRoute: typeof AdminProductsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersEmailRoute: typeof AdminCustomersEmailRoute
@@ -622,6 +682,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEventsRoute: AdminEventsRoute,
   AdminInsightsRoute: AdminInsightsRoute,
   AdminInventoryRoute: AdminInventoryRoute,
+  AdminManageRoute: AdminManageRoute,
   AdminProductsRoute: AdminProductsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersEmailRoute: AdminCustomersEmailRoute,
@@ -640,6 +701,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventsRoute: EventsRoute,
   ShopRoute: ShopRoute,
   WishlistRoute: WishlistRoute,
+  ApiNewsletterRoute: ApiNewsletterRoute,
   ProductIdRoute: ProductIdRoute,
   ApiAdminSettingsRoute: ApiAdminSettingsRoute,
   ApiAdminCategoriesIdRoute: ApiAdminCategoriesIdRoute,
@@ -650,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminCategoriesIndexRoute: ApiAdminCategoriesIndexRoute,
   ApiAdminEventsIndexRoute: ApiAdminEventsIndexRoute,
   ApiAdminInsightsIndexRoute: ApiAdminInsightsIndexRoute,
+  ApiAdminManageIndexRoute: ApiAdminManageIndexRoute,
   ApiAdminOrdersIndexRoute: ApiAdminOrdersIndexRoute,
   ApiAdminProductsIndexRoute: ApiAdminProductsIndexRoute,
 }

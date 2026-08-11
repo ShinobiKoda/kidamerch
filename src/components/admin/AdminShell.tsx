@@ -11,7 +11,7 @@ import { useData } from "@/lib/data-store";
 import { useAuth } from "@/hooks/useAuth";
 import { btnGhost } from "@/components/admin/parts";
 
-const nav = [
+const baseNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/categories", label: "Categories", icon: Tags },
@@ -20,7 +20,7 @@ const nav = [
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/events", label: "Events", icon: CalendarDays },
   { to: "/admin/insights", label: "Insights", icon: ChartNoAxesCombined },
-] as { to: string; label: string; icon: typeof Package; exact?: boolean }[];
+];
 
 export function AdminShell({ title, description, actions, children }: {
   title: string;
@@ -29,9 +29,14 @@ export function AdminShell({ title, description, actions, children }: {
   children: ReactNode;
 }) {
   const { orders, products, lowStockThreshold } = useData();
-  const { logout } = useAuth();
+  const { logout, isSuperAdmin } = useAuth();
   const [mobileNav, setMobileNav] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const nav = [
+    ...baseNav,
+    ...(isSuperAdmin ? [{ to: "/admin/manage", label: "Manage Admins", icon: Users }] : []),
+  ] as { to: string; label: string; icon: typeof Package; exact?: boolean }[];
 
   const pending = orders.filter((o) => o.status === "Pending").length;
   const low = products.filter((p) => p.stock > 0 && p.stock <= lowStockThreshold).length;

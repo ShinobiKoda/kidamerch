@@ -33,11 +33,7 @@ function Checkout() {
 
   return (
     <div className="relative mx-auto max-w-4xl px-5 pt-10 sm:px-8">
-      {/* Non-interactive, blurred mock flow underneath */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none select-none blur-[3px] opacity-60"
-      >
+      <div className="relative">
         <header className="pb-8">
           <p className="eyebrow text-primary">Secure · Prototype</p>
           <h1 className="display-xl mt-3 text-5xl sm:text-6xl">Checkout</h1>
@@ -45,79 +41,75 @@ function Checkout() {
 
         <StepIndicator step={step} />
 
-        <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
-          <div>
-            <ShippingStep onNext={() => {}} />
-          </div>
-
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-sm border border-border bg-surface p-6">
-              <p className="eyebrow text-[10px] text-muted-foreground">Order summary</p>
-              <ul className="mt-5 space-y-3 text-sm">
-                {lines.map(({ line, product }) => (
-                  <li
-                    key={`${line.id}-${line.variant?.id ?? "one"}`}
-                    className="flex items-start justify-between gap-3"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate">{product.name}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {line.variant ? `${line.variant.size || line.variant.color || line.variant.design || "Standard"} · ` : ""}Qty {line.qty}
-                      </span>
-                    </span>
-                    <span className="shrink-0 tabular-nums">
-                      {formatPrice((product.basePrice || 0) * line.qty)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-5 space-y-2 border-t border-border pt-5 text-sm">
-                <SummaryRow label="Subtotal" value={subtotal} />
-                <SummaryRow label="Shipping" value={shipping} free />
-                <SummaryRow label="Tax" value={tax} />
-              </div>
-              <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
-                <span className="eyebrow">Total</span>
-                <AnimatedNumber
-                  value={total}
-                  format={formatPrice}
-                  className="text-lg font-semibold tabular-nums text-primary"
-                />
-              </div>
+      <div className="mt-12 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-14">
+        <div>
+          <div className="rounded-sm border border-border bg-surface p-8 shadow-lift">
+            <span className="grid h-14 w-14 place-items-center rounded-full border border-border">
+              <MessageCircle size={22} className="text-primary" />
+            </span>
+            <h2 className="display-xl mt-6 text-2xl">Checkout coming soon</h2>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              For now, orders are handled directly — send us your bag on WhatsApp and we'll confirm
+              availability, pricing and shipping with you personally.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              {lines.length > 0 && (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="eyebrow inline-flex h-14 items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90 flex-1"
+                >
+                  <MessageCircle size={16} /> Continue on WhatsApp
+                </a>
+              )}
+              <Link
+                to="/shop"
+                className="eyebrow inline-flex h-14 items-center justify-center rounded-sm border border-border bg-surface px-6 text-foreground transition-colors duration-200 hover:bg-secondary/60 flex-1"
+              >
+                Back to shop
+              </Link>
             </div>
-          </aside>
+          </div>
         </div>
-      </div>
 
-      {/* Coming soon overlay */}
-      <div className="absolute inset-0 z-10 flex items-start justify-center pt-24 sm:pt-32">
-        <div className="mx-4 max-w-sm rounded-sm border border-border bg-background/95 p-8 text-center shadow-lift backdrop-blur-sm">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-border">
-            <MessageCircle size={22} className="text-primary" />
-          </span>
-          <h2 className="display-xl mt-6 text-2xl">Checkout coming soon</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            For now, orders are handled directly — send us your bag on WhatsApp and we'll confirm
-            availability, pricing and shipping with you personally.
-          </p>
-          {lines.length > 0 ? (
-            <a
-              href={whatsappHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="eyebrow mt-7 inline-flex h-14 w-full items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90"
-            >
-              <MessageCircle size={16} /> Continue on WhatsApp
-            </a>
-          ) : (
-            <Link
-              to="/shop"
-              className="eyebrow mt-7 inline-flex h-14 w-full items-center justify-center rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90"
-            >
-              Shop the drop
-            </Link>
-          )}
-        </div>
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-sm border border-border bg-surface p-6">
+            <p className="eyebrow text-[10px] text-muted-foreground">Order summary</p>
+            <ul className="mt-5 space-y-3 text-sm">
+              {lines.map(({ line, product }) => (
+                <li
+                  key={`${line.id}-${line.variant?.id ?? "one"}`}
+                  className="flex items-start justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate">{product.name}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {line.variant ? `${line.variant.size || line.variant.color || line.variant.design || "Standard"} · ` : ""}Qty {line.qty}
+                    </span>
+                  </span>
+                  <span className="shrink-0 tabular-nums">
+                    {formatPrice((product.basePrice || 0) * line.qty)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5 space-y-2 border-t border-border pt-5 text-sm">
+              <SummaryRow label="Subtotal" value={subtotal} />
+              <SummaryRow label="Shipping" value={shipping} free />
+              <SummaryRow label="Tax" value={tax} />
+            </div>
+            <div className="mt-5 flex items-center justify-between border-t border-border pt-5">
+              <span className="eyebrow">Total</span>
+              <AnimatedNumber
+                value={total}
+                format={formatPrice}
+                className="text-lg font-semibold tabular-nums text-primary"
+              />
+            </div>
+          </div>
+        </aside>
+      </div>
       </div>
     </div>
   );

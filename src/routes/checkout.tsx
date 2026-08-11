@@ -58,14 +58,14 @@ function Checkout() {
                   href={whatsappHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="eyebrow inline-flex h-14 items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90 flex-1"
+                  className="eyebrow inline-flex h-14 items-center justify-center gap-2 rounded-sm bg-primary px-6 text-primary-foreground transition-opacity duration-200 hover:opacity-90 md:flex-1"
                 >
-                  <MessageCircle size={16} /> Continue on WhatsApp
+                  <MessageCircle size={16} /> WhatsApp
                 </a>
               )}
               <Link
                 to="/shop"
-                className="eyebrow inline-flex h-14 items-center justify-center rounded-sm border border-border bg-surface px-6 text-foreground transition-colors duration-200 hover:bg-secondary/60 flex-1"
+                className="eyebrow inline-flex h-14 items-center justify-center rounded-sm border border-border bg-surface px-6 text-foreground transition-colors duration-200 hover:bg-secondary/60 md:flex-1"
               >
                 Back to shop
               </Link>

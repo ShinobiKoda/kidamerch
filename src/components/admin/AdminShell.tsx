@@ -5,12 +5,15 @@ import {
   LayoutDashboard, LogOut, Menu, Package, ReceiptText, Tags, Users,
   ShieldAlert, Activity
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ThemeToggle } from "@/components/theme";
 import { EASE } from "@/components/Reveal";
-import { useData } from "@/lib/data-store";
 import { useAuth } from "@/hooks/useAuth";
 import { btnGhost } from "@/components/admin/parts";
+import { useAdminOrders } from "@/hooks/admin/useAdminOrders";
+import { useAdminProducts } from "@/hooks/admin/useAdminProducts";
+import { useStoreSettings } from "@/hooks/admin/useAdminSettings";
+import type { Product } from "@/types/storefront";
 
 const baseNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -24,13 +27,22 @@ const baseNav = [
   { to: "/admin/logs", label: "Audit Logs", icon: Activity },
 ];
 
+// Real products don't carry a single top-level stock number — stock lives per variant.
+function totalStock(product: Product): number {
+  return product.variants?.reduce((sum, v) => sum + (v.stock ?? 0), 0) ?? 0;
+}
+
 export function AdminShell({ title, description, actions, children }: {
   title: string;
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { orders, products, lowStockThreshold } = useData();
+  const { data: orders = [] } = useAdminOrders();
+  const { data: products = [] } = useAdminProducts();
+  const { data: storeSettings } = useStoreSettings();
+  const lowStockThreshold = storeSettings?.lowStockThreshold ?? 5;
+
   const { logout, isSuperAdmin } = useAuth();
   const [mobileNav, setMobileNav] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -40,8 +52,17 @@ export function AdminShell({ title, description, actions, children }: {
     ...(isSuperAdmin ? [{ to: "/admin/manage", label: "Manage Admins", icon: Users }] : []),
   ] as { to: string; label: string; icon: typeof Package; exact?: boolean }[];
 
-  const pending = orders.filter((o) => o.status === "Pending").length;
-  const low = products.filter((p) => p.stock > 0 && p.stock <= lowStockThreshold).length;
+  const pending = useMemo(
+    () => orders.filter((o) => o.status === "pending").length,
+    [orders],
+  );
+  const low = useMemo(
+    () => products.filter((p) => {
+      const stock = totalStock(p);
+      return stock > 0 && stock <= lowStockThreshold;
+    }).length,
+    [products, lowStockThreshold],
+  );
   const counts: Record<string, number> = {
     "/admin/orders": pending,
     "/admin/inventory": low,
@@ -140,97 +161,6 @@ export function AdminShell({ title, description, actions, children }: {
           {children}
         </main>
       </div>
-    </div>
-  );
-}
-
-export function AdminLogin() {
-  const { login, logout, session, isAdmin, ready } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  if (ready && session && !isAdmin) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-surface-2 px-4">
-        <div className="w-full max-w-sm rounded-md border border-border bg-surface p-7 shadow-lift text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-500/10 text-red-500">
-            <ShieldAlert size={24} />
-          </span>
-          <h1 className="mt-5 text-xl font-semibold tracking-tight">Access Revoked</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You no longer have access to the admin panel. Please contact the superadmin if you believe this is a mistake.
-          </p>
-          <button
-            onClick={() => logout()}
-            className={`${btnGhost} mt-6 w-full`}
-          >
-            Sign out
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid min-h-screen place-items-center bg-surface-2 px-4">
-      <motion.form
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE }}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setError("");
-          setLoading(true);
-          try {
-            await login(email, password);
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "Invalid credentials");
-          } finally {
-            setLoading(false);
-          }
-        }}
-        className="w-full max-w-sm rounded-md border border-border bg-surface p-7 shadow-lift"
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-sm bg-primary text-sm font-black text-primary-foreground">K</span>
-        <h1 className="mt-5 text-xl font-semibold tracking-tight">Admin sign in</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">Sign in with your admin account.</p>
-
-        <label className="mt-6 block">
-          <span className="eyebrow text-[10px] text-muted-foreground">Email</span>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            autoComplete="username"
-            className="mt-1.5 h-11 w-full rounded-sm border border-input bg-surface-2 px-3 text-sm outline-none focus:border-primary"
-          />
-        </label>
-        <label className="mt-4 block">
-          <span className="eyebrow text-[10px] text-muted-foreground">Password</span>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            autoComplete="current-password"
-            className="mt-1.5 h-11 w-full rounded-sm border border-input bg-surface-2 px-3 text-sm outline-none focus:border-primary"
-          />
-        </label>
-
-        {error && <p className="mt-3 text-xs text-primary">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 h-11 w-full rounded-sm bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? "Signing in…" : "Sign in"}
-        </button>
-        <Link to="/" className={`${btnGhost} mt-3 w-full`}>
-          Back to storefront
-        </Link>
-      </motion.form>
     </div>
   );
 }

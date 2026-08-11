@@ -164,3 +164,94 @@ export function AdminShell({ title, description, actions, children }: {
     </div>
   );
 }
+
+export function AdminLogin() {
+  const { login, logout, session, isAdmin, ready } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  if (ready && session && !isAdmin) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-surface-2 px-4">
+        <div className="w-full max-w-sm rounded-md border border-border bg-surface p-7 shadow-lift text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-500/10 text-red-500">
+            <ShieldAlert size={24} />
+          </span>
+          <h1 className="mt-5 text-xl font-semibold tracking-tight">Access Revoked</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You no longer have access to the admin panel. Please contact the superadmin if you believe this is a mistake.
+          </p>
+          <button
+            onClick={() => logout()}
+            className={`${btnGhost} mt-6 w-full`}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid min-h-screen place-items-center bg-surface-2 px-4">
+      <motion.form
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE }}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError("");
+          setLoading(true);
+          try {
+            await login(email, password);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Invalid credentials");
+          } finally {
+            setLoading(false);
+          }
+        }}
+        className="w-full max-w-sm rounded-md border border-border bg-surface p-7 shadow-lift"
+      >
+        <span className="grid h-9 w-9 place-items-center rounded-sm bg-primary text-sm font-black text-primary-foreground">K</span>
+        <h1 className="mt-5 text-xl font-semibold tracking-tight">Admin sign in</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">Sign in with your admin account.</p>
+
+        <label className="mt-6 block">
+          <span className="eyebrow text-[10px] text-muted-foreground">Email</span>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            autoComplete="username"
+            className="mt-1.5 h-11 w-full rounded-sm border border-input bg-surface-2 px-3 text-sm outline-none focus:border-primary"
+          />
+        </label>
+        <label className="mt-4 block">
+          <span className="eyebrow text-[10px] text-muted-foreground">Password</span>
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            autoComplete="current-password"
+            className="mt-1.5 h-11 w-full rounded-sm border border-input bg-surface-2 px-3 text-sm outline-none focus:border-primary"
+          />
+        </label>
+
+        {error && <p className="mt-3 text-xs text-primary">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-6 h-11 w-full rounded-sm bg-primary text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+        >
+          {loading ? "Signing in…" : "Sign in"}
+        </button>
+        <Link to="/" className={`${btnGhost} mt-3 w-full`}>
+          Back to storefront
+        </Link>
+      </motion.form>
+    </div>
+  );
+}

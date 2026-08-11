@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Loader2, Mail, ShieldAlert, ShieldCheck, UserPlus } from "lucide-react";
+import { Loader2, Mail, ShieldAlert, ShieldCheck, UserPlus, Trash2, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdmins, useInviteAdmin } from "@/hooks/admin/useAdminManage";
+import { useAdmins, useInviteAdmin, useToggleAdmin, useRemoveAdmin } from "@/hooks/admin/useAdminManage";
+import type { AdminUser } from "@/api/admin/manage";
 import {
   btnPrimary,
   inputCls,
@@ -13,13 +14,14 @@ import {
   Panel,
 } from "@/components/admin/parts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/admin/manage")({
   component: ManageAdminsPage,
 });
 
 function ManageAdminsPage() {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, session } = useAuth();
   const navigate = useNavigate();
   
   if (!isSuperAdmin) {
@@ -30,6 +32,39 @@ function ManageAdminsPage() {
 
   const { data: admins = [], isLoading } = useAdmins();
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [adminToRemove, setAdminToRemove] = useState<AdminUser | null>(null);
+  
+  const toggleMutation = useToggleAdmin();
+  const removeMutation = useRemoveAdmin();
+  const inviteMutation = useInviteAdmin();
+
+  const handleToggle = async (id: string, current: boolean) => {
+    try {
+      await toggleMutation.mutateAsync({ id, is_active: !current });
+      toast.success(current ? "Admin access revoked" : "Admin access restored");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update admin");
+    }
+  };
+
+  const handleResend = async (email: string) => {
+    try {
+      await inviteMutation.mutateAsync(email);
+      toast.success("Invite email resent successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to resend invite");
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    try {
+      await removeMutation.mutateAsync(id);
+      toast.success("Admin successfully removed");
+      setAdminToRemove(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove admin");
+    }
+  };
 
   return (
     <AdminShell
@@ -69,7 +104,9 @@ function ManageAdminsPage() {
                   <tr className="border-b border-border bg-surface-2/50 text-muted-foreground">
                     <th className="px-4 py-3 font-medium">Email</th>
                     <th className="px-4 py-3 font-medium">Role</th>
+                    <th className="px-4 py-3 font-medium">Invited By</th>
                     <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -87,18 +124,48 @@ function ManageAdminsPage() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {admin.invited_by_email || 'System'}
+                      </td>
                       <td className="px-4 py-3">
-                        {admin.is_active ? (
-                          <span className="inline-flex items-center gap-1.5 text-green-500">
-                            <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
-                            Inactive
-                          </span>
-                        )}
+                        <div className="flex items-center gap-3">
+                          <Switch 
+                            checked={admin.is_active} 
+                            onCheckedChange={() => handleToggle(admin.id, admin.is_active)}
+                            disabled={toggleMutation.isPending || admin.id === session?.user.id}
+                          />
+                          {!admin.is_active ? (
+                            <span className="text-muted-foreground">Inactive</span>
+                          ) : admin.last_sign_in_at ? (
+                            <span className="text-green-500">Active</span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-orange-500">Pending</span>
+                              <button
+                                onClick={() => handleResend(admin.email)}
+                                disabled={inviteMutation.isPending}
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:opacity-30"
+                                title="Resend Invite Email"
+                              >
+                                {inviteMutation.isPending ? (
+                                  <Loader2 size={12} className="animate-spin" />
+                                ) : (
+                                  <Send size={12} />
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => setAdminToRemove(admin)}
+                          disabled={admin.id === session?.user.id}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                          title="Remove Admin"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -113,6 +180,37 @@ function ManageAdminsPage() {
         open={inviteModalOpen}
         onOpenChange={setInviteModalOpen}
       />
+
+      <Dialog open={!!adminToRemove} onOpenChange={(open) => !open && setAdminToRemove(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove Admin</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{adminToRemove?.email}</strong>? They will lose all access to the admin panel, but their historical actions will remain in the logs.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setAdminToRemove(null)}
+              className="h-10 flex-1 rounded-sm border border-border bg-transparent text-sm font-medium transition-colors hover:bg-secondary/60"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => adminToRemove && handleRemove(adminToRemove.id)}
+              disabled={removeMutation.isPending}
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-sm bg-red-500 px-4 text-sm font-semibold text-white transition-opacity hover:bg-red-600 disabled:opacity-50"
+            >
+              {removeMutation.isPending ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                "Remove Admin"
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }

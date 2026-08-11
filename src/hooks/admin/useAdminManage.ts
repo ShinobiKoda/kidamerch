@@ -21,3 +21,24 @@ export function useInviteAdmin() {
     },
   })
 }
+
+export function useToggleAdmin() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) => 
+      adminManageApi.toggleActive(id, is_active),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminManageKeys.all })
+    },
+  })
+}
+
+export function useRemoveAdmin() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => adminManageApi.remove(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminManageKeys.all })
+    },
+  })
+}

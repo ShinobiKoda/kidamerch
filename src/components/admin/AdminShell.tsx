@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import {
   Boxes, CalendarDays, ChartNoAxesCombined, ExternalLink,
   LayoutDashboard, LogOut, Menu, Package, ReceiptText, Tags, Users,
+  ShieldAlert, Activity
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { ThemeToggle } from "@/components/theme";
@@ -13,13 +14,14 @@ import { btnGhost } from "@/components/admin/parts";
 
 const baseNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/products", label: "Products", icon: Package },
-  { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/orders", label: "Orders", icon: ReceiptText },
+  { to: "/admin/products", label: "Products", icon: Package },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
-  { to: "/admin/customers", label: "Customers", icon: Users },
+  { to: "/admin/categories", label: "Categories", icon: Tags },
   { to: "/admin/events", label: "Events", icon: CalendarDays },
+  { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/insights", label: "Insights", icon: ChartNoAxesCombined },
+  { to: "/admin/logs", label: "Audit Logs", icon: Activity },
 ];
 
 export function AdminShell({ title, description, actions, children }: {
@@ -143,11 +145,33 @@ export function AdminShell({ title, description, actions, children }: {
 }
 
 export function AdminLogin() {
-  const { login } = useAuth();
+  const { login, logout, session, isAdmin, ready } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (ready && session && !isAdmin) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-surface-2 px-4">
+        <div className="w-full max-w-sm rounded-md border border-border bg-surface p-7 shadow-lift text-center">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-red-500/10 text-red-500">
+            <ShieldAlert size={24} />
+          </span>
+          <h1 className="mt-5 text-xl font-semibold tracking-tight">Access Revoked</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You no longer have access to the admin panel. Please contact the superadmin if you believe this is a mistake.
+          </p>
+          <button
+            onClick={() => logout()}
+            className={`${btnGhost} mt-6 w-full`}
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="grid min-h-screen place-items-center bg-surface-2 px-4">

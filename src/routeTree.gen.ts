@@ -21,8 +21,10 @@ import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminInsightsRouteImport } from './routes/admin.insights'
 import { Route as AdminInventoryRouteImport } from './routes/admin.inventory'
+import { Route as AdminLogsRouteImport } from './routes/admin.logs'
 import { Route as AdminManageRouteImport } from './routes/admin.manage'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminSetPasswordRouteImport } from './routes/admin.set-password'
 import { Route as ApiNewsletterRouteImport } from './routes/api/newsletter'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin.customers.index'
@@ -36,6 +38,7 @@ import { Route as ApiAdminEventsIndexRouteImport } from './routes/api/admin/even
 import { Route as ApiAdminEventsIdRouteImport } from './routes/api/admin/events/$id'
 import { Route as ApiAdminInsightsIndexRouteImport } from './routes/api/admin/insights/index'
 import { Route as ApiAdminInventoryAdjustmentsRouteImport } from './routes/api/admin/inventory/adjustments'
+import { Route as ApiAdminLogsIndexRouteImport } from './routes/api/admin/logs/index'
 import { Route as ApiAdminManageIndexRouteImport } from './routes/api/admin/manage/index'
 import { Route as ApiAdminOrdersIndexRouteImport } from './routes/api/admin/orders/index'
 import { Route as ApiAdminOrdersIdRouteImport } from './routes/api/admin/orders/$id'
@@ -102,6 +105,11 @@ const AdminInventoryRoute = AdminInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/logs',
+  path: '/logs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminManageRoute = AdminManageRouteImport.update({
   id: '/manage',
   path: '/manage',
@@ -110,6 +118,11 @@ const AdminManageRoute = AdminManageRouteImport.update({
 const AdminProductsRoute = AdminProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSetPasswordRoute = AdminSetPasswordRouteImport.update({
+  id: '/set-password',
+  path: '/set-password',
   getParentRoute: () => AdminRoute,
 } as any)
 const ApiNewsletterRoute = ApiNewsletterRouteImport.update({
@@ -178,6 +191,11 @@ const ApiAdminInventoryAdjustmentsRoute =
     path: '/api/admin/inventory/adjustments',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminLogsIndexRoute = ApiAdminLogsIndexRouteImport.update({
+  id: '/api/admin/logs/',
+  path: '/api/admin/logs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminManageIndexRoute = ApiAdminManageIndexRouteImport.update({
   id: '/api/admin/manage/',
   path: '/api/admin/manage/',
@@ -216,8 +234,10 @@ export interface FileRoutesByFullPath {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -234,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/logs/': typeof ApiAdminLogsIndexRoute
   '/api/admin/manage/': typeof ApiAdminManageIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
@@ -249,8 +270,10 @@ export interface FileRoutesByTo {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin': typeof AdminIndexRoute
@@ -267,6 +290,7 @@ export interface FileRoutesByTo {
   '/api/admin/categories': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/logs': typeof ApiAdminLogsIndexRoute
   '/api/admin/manage': typeof ApiAdminManageIndexRoute
   '/api/admin/orders': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products': typeof ApiAdminProductsIndexRoute
@@ -284,8 +308,10 @@ export interface FileRoutesById {
   '/admin/events': typeof AdminEventsRoute
   '/admin/insights': typeof AdminInsightsRoute
   '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/logs': typeof AdminLogsRoute
   '/admin/manage': typeof AdminManageRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/set-password': typeof AdminSetPasswordRoute
   '/api/newsletter': typeof ApiNewsletterRoute
   '/product/$id': typeof ProductIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -302,6 +328,7 @@ export interface FileRoutesById {
   '/api/admin/categories/': typeof ApiAdminCategoriesIndexRoute
   '/api/admin/events/': typeof ApiAdminEventsIndexRoute
   '/api/admin/insights/': typeof ApiAdminInsightsIndexRoute
+  '/api/admin/logs/': typeof ApiAdminLogsIndexRoute
   '/api/admin/manage/': typeof ApiAdminManageIndexRoute
   '/api/admin/orders/': typeof ApiAdminOrdersIndexRoute
   '/api/admin/products/': typeof ApiAdminProductsIndexRoute
@@ -320,8 +347,10 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/logs'
     | '/admin/manage'
     | '/admin/products'
+    | '/admin/set-password'
     | '/api/newsletter'
     | '/product/$id'
     | '/admin/'
@@ -338,6 +367,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/'
     | '/api/admin/events/'
     | '/api/admin/insights/'
+    | '/api/admin/logs/'
     | '/api/admin/manage/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
@@ -353,8 +383,10 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/logs'
     | '/admin/manage'
     | '/admin/products'
+    | '/admin/set-password'
     | '/api/newsletter'
     | '/product/$id'
     | '/admin'
@@ -371,6 +403,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories'
     | '/api/admin/events'
     | '/api/admin/insights'
+    | '/api/admin/logs'
     | '/api/admin/manage'
     | '/api/admin/orders'
     | '/api/admin/products'
@@ -387,8 +420,10 @@ export interface FileRouteTypes {
     | '/admin/events'
     | '/admin/insights'
     | '/admin/inventory'
+    | '/admin/logs'
     | '/admin/manage'
     | '/admin/products'
+    | '/admin/set-password'
     | '/api/newsletter'
     | '/product/$id'
     | '/admin/'
@@ -405,6 +440,7 @@ export interface FileRouteTypes {
     | '/api/admin/categories/'
     | '/api/admin/events/'
     | '/api/admin/insights/'
+    | '/api/admin/logs/'
     | '/api/admin/manage/'
     | '/api/admin/orders/'
     | '/api/admin/products/'
@@ -429,6 +465,7 @@ export interface RootRouteChildren {
   ApiAdminCategoriesIndexRoute: typeof ApiAdminCategoriesIndexRoute
   ApiAdminEventsIndexRoute: typeof ApiAdminEventsIndexRoute
   ApiAdminInsightsIndexRoute: typeof ApiAdminInsightsIndexRoute
+  ApiAdminLogsIndexRoute: typeof ApiAdminLogsIndexRoute
   ApiAdminManageIndexRoute: typeof ApiAdminManageIndexRoute
   ApiAdminOrdersIndexRoute: typeof ApiAdminOrdersIndexRoute
   ApiAdminProductsIndexRoute: typeof ApiAdminProductsIndexRoute
@@ -520,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInventoryRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/manage': {
       id: '/admin/manage'
       path: '/manage'
@@ -532,6 +576,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/admin/products'
       preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/set-password': {
+      id: '/admin/set-password'
+      path: '/set-password'
+      fullPath: '/admin/set-password'
+      preLoaderRoute: typeof AdminSetPasswordRouteImport
       parentRoute: typeof AdminRoute
     }
     '/api/newsletter': {
@@ -625,6 +676,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminInventoryAdjustmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/logs/': {
+      id: '/api/admin/logs/'
+      path: '/api/admin/logs'
+      fullPath: '/api/admin/logs/'
+      preLoaderRoute: typeof ApiAdminLogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/manage/': {
       id: '/api/admin/manage/'
       path: '/api/admin/manage'
@@ -668,8 +726,10 @@ interface AdminRouteChildren {
   AdminEventsRoute: typeof AdminEventsRoute
   AdminInsightsRoute: typeof AdminInsightsRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminLogsRoute: typeof AdminLogsRoute
   AdminManageRoute: typeof AdminManageRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminSetPasswordRoute: typeof AdminSetPasswordRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersEmailRoute: typeof AdminCustomersEmailRoute
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
@@ -682,8 +742,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEventsRoute: AdminEventsRoute,
   AdminInsightsRoute: AdminInsightsRoute,
   AdminInventoryRoute: AdminInventoryRoute,
+  AdminLogsRoute: AdminLogsRoute,
   AdminManageRoute: AdminManageRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminSetPasswordRoute: AdminSetPasswordRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersEmailRoute: AdminCustomersEmailRoute,
   AdminOrdersIdRoute: AdminOrdersIdRoute,
@@ -712,6 +774,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminCategoriesIndexRoute: ApiAdminCategoriesIndexRoute,
   ApiAdminEventsIndexRoute: ApiAdminEventsIndexRoute,
   ApiAdminInsightsIndexRoute: ApiAdminInsightsIndexRoute,
+  ApiAdminLogsIndexRoute: ApiAdminLogsIndexRoute,
   ApiAdminManageIndexRoute: ApiAdminManageIndexRoute,
   ApiAdminOrdersIndexRoute: ApiAdminOrdersIndexRoute,
   ApiAdminProductsIndexRoute: ApiAdminProductsIndexRoute,

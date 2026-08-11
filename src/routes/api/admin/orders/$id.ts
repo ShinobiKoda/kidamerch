@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { requireRole, AuthError } from "@/server/utils/require-role";
 import { transformOrder } from "@/lib/helpers";
+import { logAdminAction } from '@/server/utils/audit-logger';
 import type { UpdateOrderInput } from "@/types/admin";
 
 async function loadOrder(id: string) {
@@ -72,6 +73,15 @@ export const Route = createFileRoute("/api/admin/orders/$id")({
               .insert({ order_id: params.id, label: body.historyLabel });
             if (error) throw new Error(`Database Error: ${error.message}`);
           }
+
+          const { user } = await requireRole(request, "admin");
+          await logAdminAction({
+            adminId: user.id,
+            action: 'UPDATE_ORDER',
+            entityType: 'order',
+            entityId: params.id,
+            details: updates
+          })
 
           return Response.json(await loadOrder(params.id));
         } catch (err) {

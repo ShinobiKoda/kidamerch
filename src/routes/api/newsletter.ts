@@ -16,7 +16,7 @@ export const Route = createFileRoute('/api/newsletter')({
           if (!email) return Response.json({ message: 'Email required' }, { status: 400 })
 
           const { error: resendError } = await resend.emails.send({
-            from: 'KidaMerch <noreply@kidamerch.com>',
+            from: 'KidaMerch <newsletter@sir-p.tech>',
             to: email,
             subject: 'Welcome to KidaMerch',
             html: getNewsletterWelcomeEmailHtml(),

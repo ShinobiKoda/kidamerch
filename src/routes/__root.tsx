@@ -22,6 +22,13 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { IntroLoader } from "@/components/IntroLoader";
 import { EASE } from "@/components/Reveal";
+import {
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  DEFAULT_OG_IMAGE,
+  organizationSchema,
+  websiteSchema,
+} from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -88,13 +95,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "KidaMerch — Anime Merch Drops" },
-      {
-        name: "description",
-        content:
-          "Independent anime merch in small runs: heavyweight apparel, hand-finished figures, accessories and numbered prints.",
-      },
+      { title: `${SITE_NAME} — Anime Merch Drops` },
+      { name: "description", content: SITE_DESCRIPTION },
+      { name: "theme-color", content: "#0a0a0a" },
+      { name: "color-scheme", content: "dark" },
+
+      // Open Graph fallback (route-level seo() overrides these per-page)
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: SITE_NAME },
+      { property: "og:image", content: DEFAULT_OG_IMAGE },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -105,7 +114,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+
+      // Favicons — see the image checklist for exact files/sizes
+      { rel: "icon", href: "/favicon.ico", sizes: "any" },
+      { rel: "icon", href: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { rel: "icon", href: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
+    ],
+    scripts: [
+      // Site-wide structured data. Page-level schema (Product, Breadcrumb, etc.)
+      // gets added the same way inside individual routes' head().
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(organizationSchema()),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(websiteSchema()),
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -174,4 +201,3 @@ function Shell() {
     </>
   );
 }
-

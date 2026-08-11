@@ -30,7 +30,7 @@ export const Route = createFileRoute('/api/checkout/')({
               user_id: userId,
               guest_name: 'WhatsApp Guest',
               status: 'pending',
-              payment_status: 'unpaid',
+              payment_status: 'pending',
               subtotal,
               shipping_cost: shipping,
               tax,

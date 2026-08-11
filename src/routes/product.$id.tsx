@@ -10,13 +10,13 @@ import { EASE, Reveal } from "@/components/Reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import type { Product, ProductVariant, ProductImage } from "@/types/storefront";
+import { productsApi } from "@/api/products";
 
 import { seo, canonicalLink, productSchema, breadcrumbSchema } from "@/lib/seo";
 
 export const Route = createFileRoute("/product/$id")({
   loader: async ({ context, params }) => {
     const queryClient = context.queryClient;
-    const { productsApi } = await import("@/api/products");
     return queryClient.ensureQueryData({
       queryKey: ["products", "detail", params.id],
       queryFn: () => productsApi.getProductById(params.id),
@@ -70,7 +70,7 @@ export const Route = createFileRoute("/product/$id")({
               { name: "Home", path: "/" },
               { name: "Shop", path: "/shop" },
               { name: loaderData.name, path: `/product/${loaderData.id}` },
-            ])
+            ]),
           ),
         },
       ],

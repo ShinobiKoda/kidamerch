@@ -40,7 +40,7 @@ export function useAdminOrder(id: string) {
 
 export function useUpdateOrder() {
   const queryClient = useQueryClient();
-  return useMutation<Order, Error, { id: string; input: UpdateOrderInput }>({
+  return useMutation<Order, Error, { id: string; input: UpdateOrderInput }, { prevDetail: Order | undefined; prevAll: Order[] | undefined }>({
     mutationFn: ({ id, input }) => adminOrdersApi.update(id, input),
 
     onMutate: async ({ id, input }) => {

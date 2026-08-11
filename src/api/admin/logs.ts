@@ -19,7 +19,7 @@ async function authHeaders() {
 
 export const adminLogsApi = {
   getAll: async (): Promise<AdminAuditLog[]> => {
-    const res = await fetch('/api/admin/logs', {
+    const res = await fetch('/api/admin/logs/', {
       headers: await authHeaders()
     })
     if (!res.ok) throw new Error('Failed to fetch logs')

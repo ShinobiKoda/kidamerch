@@ -3,8 +3,7 @@
 // pulls products + categories from Supabase so new drops show up automatically.
 import { createFileRoute } from "@tanstack/react-router";
 import { SITE_URL } from "@/lib/seo";
-// TODO: point this at your actual Supabase client, e.g.:
-// import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 interface SitemapUrl {
   loc: string;
@@ -24,38 +23,41 @@ const STATIC_ROUTES: SitemapUrl[] = [
 async function getDynamicUrls(): Promise<SitemapUrl[]> {
   const urls: SitemapUrl[] = [];
 
-  // --- Categories -----------------------------------------------------
-  // TODO: replace with your real query against the `categories` table.
-  //
-  // const { data: categories } = await supabase
-  //   .from("categories")
-  //   .select("slug, updated_at");
-  //
-  // for (const category of categories ?? []) {
-  //   urls.push({
-  //     loc: `/shop/${category.slug}`,
-  //     lastmod: category.updated_at,
-  //     changefreq: "weekly",
-  //     priority: 0.7,
-  //   });
-  // }
+  try {
+    // --- Categories -----------------------------------------------------
+    const { data: categories } = await supabase
+      .from("categories")
+      .select("name, created_at");
 
-  // --- Products ---------------------------------------------------------
-  // TODO: replace with your real query against the products table.
-  //
-  // const { data: products } = await supabase
-  //   .from("products")
-  //   .select("slug, updated_at")
-  //   .eq("is_published", true);
-  //
-  // for (const product of products ?? []) {
-  //   urls.push({
-  //     loc: `/products/${product.slug}`,
-  //     lastmod: product.updated_at,
-  //     changefreq: "weekly",
-  //     priority: 0.8,
-  //   });
-  // }
+    for (const category of categories ?? []) {
+      urls.push({
+        loc: `/shop?category=${encodeURIComponent(category.name)}`,
+        lastmod: category.created_at,
+        changefreq: "weekly",
+        priority: 0.7,
+      });
+    }
+
+    // --- Products ---------------------------------------------------------
+    const { data: products } = await supabase
+      .from("products")
+      .select("id, created_at")
+      .eq("is_active", true);
+
+    for (const product of products ?? []) {
+      const entry: SitemapUrl = {
+        loc: `/product/${product.id}`,
+        changefreq: "weekly",
+        priority: 0.8,
+      };
+      if (product.created_at) {
+        entry.lastmod = product.created_at;
+      }
+      urls.push(entry);
+    }
+  } catch (error) {
+    console.error("Error generating dynamic sitemap URLs:", error);
+  }
 
   return urls;
 }

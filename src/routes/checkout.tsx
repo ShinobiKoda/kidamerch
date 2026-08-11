@@ -8,17 +8,16 @@ import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { EASE } from "@/components/Reveal";
 import { buildWhatsAppOrderMessage, buildWhatsAppLink } from "@/lib/whatsapp";
 
+import { seo, canonicalLink } from "@/lib/seo";
+
 export const Route = createFileRoute("/checkout")({
   head: () => ({
-    meta: [
-      { title: "Checkout — KidaMerch" },
-      {
-        name: "description",
-        content: "Checkout is coming soon. Orders are currently handled directly over WhatsApp.",
-      },
-      { property: "og:title", content: "Checkout — KidaMerch" },
-      { property: "og:description", content: "Coming soon — orders are handled via WhatsApp for now." },
-    ],
+    meta: seo({
+      title: "Secure Checkout Details",
+      description: "Submit details to request order placement. Orders are processed directly via WhatsApp.",
+      path: "/checkout",
+    }),
+    links: canonicalLink("/checkout"),
   }),
   component: Checkout,
 });

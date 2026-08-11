@@ -6,18 +6,16 @@ import { useStore } from "@/lib/store";
 import { useProducts } from "@/hooks/useProducts";
 import { EASE } from "@/components/Reveal";
 
+import { seo, canonicalLink } from "@/lib/seo";
+
 export const Route = createFileRoute("/wishlist")({
   head: () => ({
-    meta: [
-      { title: "Wishlist — KidaMerch" },
-      {
-        name: "description",
-        content:
-          "Your saved KidaMerch pieces. Move items straight to the bag or keep them held for the next drop.",
-      },
-      { property: "og:title", content: "Wishlist — KidaMerch" },
-      { property: "og:description", content: "Your saved KidaMerch pieces, ready to move to the bag." },
-    ],
+    meta: seo({
+      title: "Your Saved Pieces",
+      description: "Keep track of limited-run apparel, hand-finished figures, and exclusive prints you've saved.",
+      path: "/wishlist",
+    }),
+    links: canonicalLink("/wishlist"),
   }),
   component: WishlistPage,
 });

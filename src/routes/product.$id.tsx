@@ -11,10 +11,71 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import type { Product, ProductVariant, ProductImage } from "@/types/storefront";
 
+import { seo, canonicalLink, productSchema, breadcrumbSchema } from "@/lib/seo";
+
 export const Route = createFileRoute("/product/$id")({
-  head: () => ({
-    meta: [{ title: "KidaMerch" }],
-  }),
+  loader: async ({ context, params }) => {
+    const queryClient = context.queryClient;
+    const { productsApi } = await import("@/api/products");
+    return queryClient.ensureQueryData({
+      queryKey: ["products", "detail", params.id],
+      queryFn: () => productsApi.getProductById(params.id),
+    });
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData) {
+      return {
+        meta: seo({
+          title: "Product Details",
+          description: "Explore KidaMerch limited edition apparel, figures, and accessories.",
+          path: "/shop",
+        }),
+      };
+    }
+
+    const firstImage = loaderData.images?.[0]?.url || "";
+    const sku = loaderData.variants?.[0]?.sku || undefined;
+    const availability = loaderData.isActive ? "InStock" : "OutOfStock";
+
+    const productSchemaOptions: Parameters<typeof productSchema>[0] = {
+      name: loaderData.name,
+      description: loaderData.description || "",
+      image: firstImage,
+      price: loaderData.basePrice,
+      availability: availability,
+      path: `/product/${loaderData.id}`,
+    };
+    if (sku) {
+      productSchemaOptions.sku = sku;
+    }
+
+    return {
+      meta: seo({
+        title: loaderData.name,
+        description: loaderData.description || "KidaMerch limited edition merch item.",
+        image: firstImage,
+        path: `/product/${loaderData.id}`,
+        type: "product",
+      }),
+      links: canonicalLink(`/product/${loaderData.id}`),
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(productSchema(productSchemaOptions)),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(
+            breadcrumbSchema([
+              { name: "Home", path: "/" },
+              { name: "Shop", path: "/shop" },
+              { name: loaderData.name, path: `/product/${loaderData.id}` },
+            ])
+          ),
+        },
+      ],
+    };
+  },
   notFoundComponent: ProductMissing,
   component: ProductDetail,
 });

@@ -7,18 +7,16 @@ import { QtyStepper } from "@/components/QtyStepper";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { EASE } from "@/components/Reveal";
 
+import { seo, canonicalLink } from "@/lib/seo";
+
 export const Route = createFileRoute("/cart")({
   head: () => ({
-    meta: [
-      { title: "Your Bag — KidaMerch" },
-      {
-        name: "description",
-        content:
-          "Review your KidaMerch bag: line items, variants, quantities, and an estimated shipping and tax breakdown before checkout.",
-      },
-      { property: "og:title", content: "Your Bag — KidaMerch" },
-      { property: "og:description", content: "Review your bag before checkout." },
-    ],
+    meta: seo({
+      title: "Your Shopping Bag",
+      description: "Review your selected anime apparel, hand-finished figures, and accessories before checkout.",
+      path: "/cart",
+    }),
+    links: canonicalLink("/cart"),
   }),
   component: CartPage,
 });

@@ -7,6 +7,8 @@ import { EASE } from "@/components/Reveal";
 import { useProducts } from "@/hooks/useProducts";
 import type { Product } from "@/types/storefront";
 
+import { seo, canonicalLink } from "@/lib/seo";
+
 type Sort = "newest" | "price-asc" | "price-desc";
 
 const DEFAULT_PRICE_CEILING = 350; // fallback floor before products load, or if catalogue is tiny
@@ -18,19 +20,12 @@ export const Route = createFileRoute("/shop")({
       : {},
 
   head: () => ({
-    meta: [
-      { title: "Shop All — KidaMerch" },
-      {
-        name: "description",
-        content:
-          "Browse every piece in the KidaMerch catalogue: apparel, figures, accessories and numbered prints. Filter by category, price and availability.",
-      },
-      { property: "og:title", content: "Shop All — KidaMerch" },
-      {
-        property: "og:description",
-        content: "Every piece in the catalogue: apparel, figures, accessories and prints.",
-      },
-    ],
+    meta: seo({
+      title: "Shop Anime Merch",
+      description: "Browse limited-run apparel, hand-finished figures, and accessories from our independent studio.",
+      path: "/shop",
+    }),
+    links: canonicalLink("/shop"),
   }),
   component: Shop,
 });

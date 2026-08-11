@@ -5,23 +5,17 @@ import { useMemo, useState } from "react";
 import { EASE, Reveal } from "@/components/Reveal";
 import { useEvents } from "@/hooks/useEvents";
 import { formatEventDate } from "@/lib/helpers";
+import { seo, canonicalLink } from "@/lib/seo";
 import type { Event } from "@/api/events";
 
 export const Route = createFileRoute("/events")({
   head: () => ({
-    meta: [
-      { title: "Events — Conventions, Meetups & Pop-ups | KidaMerch" },
-      {
-        name: "description",
-        content:
-          "Where to find KidaMerch in person: conventions, cosplay meetups, signing nights and one-off pop-up shops, with photo highlights from past events.",
-      },
-      { property: "og:title", content: "Events — KidaMerch" },
-      {
-        property: "og:description",
-        content: "Conventions, cosplay meetups, signings and pop-ups. Past highlights included.",
-      },
-    ],
+    meta: seo({
+      title: "Pop-ups & Conventions",
+      description: "Come find us in person: anime conventions, cosplay meetups, and exclusive pop-ups.",
+      path: "/events",
+    }),
+    links: canonicalLink("/events"),
   }),
   component: EventsPage,
 });

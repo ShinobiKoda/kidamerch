@@ -150,7 +150,7 @@ export type Database = {
           product_name: string
           quantity: number
           variant_details: string | null
-          variant_id: string
+          variant_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -160,7 +160,7 @@ export type Database = {
           product_name: string
           quantity?: number
           variant_details?: string | null
-          variant_id: string
+          variant_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -170,7 +170,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           variant_details?: string | null
-          variant_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -424,7 +424,7 @@ export type Database = {
           id: string
           product_name: string
           reason: string
-          variant_id: string
+          variant_id: string | null
           variant_label: string | null
         }
         Insert: {
@@ -433,7 +433,7 @@ export type Database = {
           id?: string
           product_name: string
           reason: string
-          variant_id: string
+          variant_id?: string | null
           variant_label?: string | null
         }
         Update: {
@@ -442,7 +442,7 @@ export type Database = {
           id?: string
           product_name?: string
           reason?: string
-          variant_id?: string
+          variant_id?: string | null
           variant_label?: string | null
         }
         Relationships: [

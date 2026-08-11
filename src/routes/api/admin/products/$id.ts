@@ -1,69 +1,99 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { supabaseAdmin } from '@/lib/supabase-admin'
-import { requireRole, AuthError } from '@/server/utils/require-role'
-import { transformProduct } from '@/lib/helpers'
-import type { DBProductWithRelations, Product } from '@/types/storefront'
-import type { UpdateProductInput } from '@/types/admin'
+import { createFileRoute } from "@tanstack/react-router";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { requireRole, AuthError } from "@/server/utils/require-role";
+import { transformProduct } from "@/lib/helpers";
+import type { DBProductWithRelations, Product } from "@/types/storefront";
+import type { UpdateProductInput } from "@/types/admin";
 
-export const Route = createFileRoute('/api/admin/products/$id')({
+export const Route = createFileRoute("/api/admin/products/$id")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
         try {
-          await requireRole(request, 'admin')
-          const product = await getProduct(params.id)
-          return Response.json(product)
+          await requireRole(request, "admin");
+          const product = await getProduct(params.id);
+          return Response.json(product);
         } catch (err) {
-          if (err instanceof AuthError) return err
-          return Response.json({ message: (err as Error).message }, { status: 500 })
+          if (err instanceof AuthError) return err;
+          return Response.json({ message: (err as Error).message }, { status: 500 });
         }
       },
 
       PUT: async ({ request, params }) => {
         try {
-          await requireRole(request, 'admin')
-          const body = (await request.json()) as UpdateProductInput
-          const product = await updateProduct(params.id, body)
-          return Response.json(product)
+          await requireRole(request, "admin");
+          const body = (await request.json()) as UpdateProductInput;
+          const product = await updateProduct(params.id, body);
+          return Response.json(product);
         } catch (err) {
-          if (err instanceof AuthError) return err
-          return Response.json({ message: (err as Error).message }, { status: 500 })
+          if (err instanceof AuthError) return err;
+          return Response.json({ message: (err as Error).message }, { status: 500 });
         }
       },
 
       DELETE: async ({ request, params }) => {
         try {
-          await requireRole(request, 'admin')
-          const { error } = await supabaseAdmin.from('products').delete().eq('id', params.id)
-          if (error) throw new Error(`Database Error: ${error.message}`)
-          return Response.json({ id: params.id, deleted: true })
+          await requireRole(request, "admin");
+
+          const { data: variants } = await supabaseAdmin
+            .from("product_variants")
+            .select("id")
+            .eq("product_id", params.id);
+
+          if (variants && variants.length > 0) {
+            const variantIds = variants.map((v) => v.id);
+
+            const { error: nullifyOrderItemsError } = await supabaseAdmin
+              .from("order_items")
+              .update({ variant_id: null })
+              .in("variant_id", variantIds);
+
+            if (nullifyOrderItemsError) {
+              throw new Error(`Failed to unlink order items: ${nullifyOrderItemsError.message}`);
+            }
+
+            const { error: nullifyStockAdjError } = await supabaseAdmin
+              .from("stock_adjustments")
+              .update({ variant_id: null })
+              .in("variant_id", variantIds);
+
+            if (nullifyStockAdjError) {
+              throw new Error(
+                `Failed to unlink stock adjustments: ${nullifyStockAdjError.message}`,
+              );
+            }
+          }
+
+          const { error } = await supabaseAdmin.from("products").delete().eq("id", params.id);
+          if (error) throw new Error(`Database Error: ${error.message}`);
+          return Response.json({ id: params.id, deleted: true });
         } catch (err) {
-          if (err instanceof AuthError) return err
-          return Response.json({ message: (err as Error).message }, { status: 500 })
+          if (err instanceof AuthError) return err;
+          return Response.json({ message: (err as Error).message }, { status: 500 });
         }
       },
     },
   },
-})
+});
 
 async function getProduct(id: string): Promise<Product> {
   const { data, error } = await supabaseAdmin
-    .from('products')
+    .from("products")
     .select(`*, product_variants(*), product_images(*)`)
-    .eq('id', id)
-    .single()
+    .eq("id", id)
+    .single();
 
-  if (error) throw new Error(`Product not found: ${error.message}`)
-  return transformProduct(data as unknown as DBProductWithRelations)
+  if (error) throw new Error(`Product not found: ${error.message}`);
+  return transformProduct(data as unknown as DBProductWithRelations);
 }
 
 async function updateProduct(id: string, body: UpdateProductInput): Promise<Product> {
   if (!body?.name || body.basePrice == null || !body.category) {
-    throw new Error('name, basePrice, and category are required')
+    throw new Error("name, basePrice, and category are required");
   }
 
   const { error: productError } = await supabaseAdmin
-    .from('products')
+    .from("products")
     .update({
       name: body.name,
       description: body.description ?? null,
@@ -72,22 +102,41 @@ async function updateProduct(id: string, body: UpdateProductInput): Promise<Prod
       anime_series: body.animeSeries ?? null,
       is_active: body.isActive ?? true,
     })
-    .eq('id', id)
+    .eq("id", id);
 
-  if (productError) throw new Error(`Database Error: ${productError.message}`)
+  if (productError) throw new Error(`Database Error: ${productError.message}`);
+
+  // Get all variant IDs for this product
+  const { data: existingVariants } = await supabaseAdmin
+    .from("product_variants")
+    .select("id")
+    .eq("product_id", id);
+
+  // Nullify stock_adjustments references too, same reasoning as order_items
+  if (existingVariants && existingVariants.length > 0) {
+    const variantIds = existingVariants.map((v) => v.id);
+    const { error: nullifyStockAdjError } = await supabaseAdmin
+      .from("stock_adjustments")
+      .update({ variant_id: null })
+      .in("variant_id", variantIds);
+
+    if (nullifyStockAdjError) {
+      throw new Error(`Failed to unlink stock adjustments: ${nullifyStockAdjError.message}`);
+    }
+  }
 
   const { error: deleteVariantsError } = await supabaseAdmin
-    .from('product_variants')
+    .from("product_variants")
     .delete()
-    .eq('product_id', id)
+    .eq("product_id", id);
 
-  if (deleteVariantsError) throw new Error(`Database Error: ${deleteVariantsError.message}`)
+  if (deleteVariantsError) throw new Error(`Database Error: ${deleteVariantsError.message}`);
 
   const variantRows = body.variants?.length
     ? body.variants
-    : [{ size: null, color: null, design: null, sku: null, priceOverride: null, stock: 0 }]
+    : [{ size: null, color: null, design: null, sku: null, priceOverride: null, stock: 0 }];
 
-  const { error: insertVariantsError } = await supabaseAdmin.from('product_variants').insert(
+  const { error: insertVariantsError } = await supabaseAdmin.from("product_variants").insert(
     variantRows.map((v) => ({
       product_id: id,
       size: v.size ?? null,
@@ -97,23 +146,23 @@ async function updateProduct(id: string, body: UpdateProductInput): Promise<Prod
       price_override: v.priceOverride ?? null,
       stock: v.stock ?? 0,
     })),
-  )
+  );
 
-  if (insertVariantsError) throw new Error(`Database Error: ${insertVariantsError.message}`)
+  if (insertVariantsError) throw new Error(`Database Error: ${insertVariantsError.message}`);
 
   const { error: deleteImagesError } = await supabaseAdmin
-    .from('product_images')
+    .from("product_images")
     .delete()
-    .eq('product_id', id)
+    .eq("product_id", id);
 
-  if (deleteImagesError) throw new Error(`Database Error: ${deleteImagesError.message}`)
+  if (deleteImagesError) throw new Error(`Database Error: ${deleteImagesError.message}`);
 
   if (body.imageUrls?.length) {
-    const { error: insertImagesError } = await supabaseAdmin.from('product_images').insert(
-      body.imageUrls.map((url, i) => ({ product_id: id, url, position: i })),
-    )
-    if (insertImagesError) throw new Error(`Database Error: ${insertImagesError.message}`)
+    const { error: insertImagesError } = await supabaseAdmin
+      .from("product_images")
+      .insert(body.imageUrls.map((url, i) => ({ product_id: id, url, position: i })));
+    if (insertImagesError) throw new Error(`Database Error: ${insertImagesError.message}`);
   }
 
-  return getProduct(id)
+  return getProduct(id);
 }
